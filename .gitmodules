@@ -1,0 +1,3 @@
+[submodule "Datagen"]
+	path = Datagen
+	url = https://github.com/Spockkk0225/renewal_datagen

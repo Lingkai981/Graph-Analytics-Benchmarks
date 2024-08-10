@@ -1,0 +1,113 @@
+Here are the main API functions used, including their purposes, parameters, and some usage examples.
+
+1. alloc_vertex_array
+Purpose: Allocates memory for a vertex array.
+Parameters: None.
+Usage Example:
+double* curr = graph->alloc_vertex_array<double>();
+Description: Allocates a vertex array of type double.
+
+2. alloc_vertex_subset
+Purpose: Allocates a vertex subset.
+Parameters: None.
+Usage Example:
+VertexSubset* active = graph->alloc_vertex_subset();
+active->fill();
+Description: Creates a vertex subset and fills it to include all vertices.
+
+3. fill_vertex_array
+Purpose: Fills a vertex array with a specific value.
+Parameters:
+T* array: Pointer to the vertex array.
+T value: The value to fill the array with.
+Usage Example:
+graph->fill_vertex_array(next, (double)0);
+Description: Sets all elements of the next array to 0.
+
+4. process_vertices
+Purpose: Processes vertices based on an active bitmap.
+Parameters:
+std::function<R(VertexId)> process: Function to process each vertex.
+Bitmap* active: Bitmap indicating active vertices.
+Usage Example:
+double delta = graph->process_vertices<double>(
+  [&](VertexId vtx) {
+    curr[vtx] = (double)1;
+    if (graph->out_degree[vtx] > 0) {
+      curr[vtx] /= graph->out_degree[vtx];
+    }
+    return (double)1;
+  },
+  active
+);
+Description: Initializes the curr array and calculates the initial delta.
+
+5. process_edges
+Purpose: Processes edges using provided functions.
+Parameters:
+Various lambda functions for sparse and dense processing.
+Bitmap* active: Bitmap indicating active vertices.
+Bitmap* dense_selective (optional): Bitmap for dense selective processing.
+Usage Example:
+graph->process_edges<int, double>(
+  [&](VertexId src) {
+    graph->emit(src, curr[src]);
+  },
+  [&](VertexId src, double msg, VertexAdjList<Empty> outgoing_adj) {
+    for (AdjUnit<Empty>* ptr = outgoing_adj.begin; ptr != outgoing_adj.end; ptr++) {
+      VertexId dst = ptr->neighbour;
+      write_add(&next[dst], msg);
+    }
+    return 0;
+  },
+  [&](VertexId dst, VertexAdjList<Empty> incoming_adj) {
+    double sum = 0;
+    for (AdjUnit<Empty>* ptr = incoming_adj.begin; ptr != incoming_adj.end; ptr++) {
+      VertexId src = ptr->neighbour;
+      sum += curr[src];
+    }
+    graph->emit(dst, sum);
+  },
+  [&](VertexId dst, double msg) {
+    write_add(&next[dst], msg);
+    return 0;
+  },
+  active
+);
+Description: Processes edges by emitting messages and accumulating values for the PageRank computation.
+
+6. emit
+Purpose: Emits a message to a vertex.
+Parameters:
+VertexId vtx: Target vertex ID.
+M msg: Message to send.
+Usage Example:
+graph->emit(src, curr[src]);
+Description: Sends the curr[src] value to be processed by the destination vertices.
+
+7. gather_vertex_array
+Purpose: Gathers a vertex array from all partitions.
+Parameters:
+T* array: Pointer to the vertex array.
+int root: Root process for gathering.
+Usage Example:
+graph->gather_vertex_array(curr, 0);
+Description: Collects the curr array data from all partitions to the root process.
+
+8. dealloc_vertex_array
+Purpose: Deallocates memory for a vertex array.
+Parameters:
+T* array: Pointer to the vertex array.
+Usage Example:
+graph->dealloc_vertex_array(curr);
+graph->dealloc_vertex_array(next);
+Description: Frees the memory allocated for the curr and next arrays.
+
+9. load_directed
+Purpose: Loads a directed graph from a file.
+Parameters:
+std::string path: Path to the graph file.
+VertexId vertices: Number of vertices.
+Usage Example:
+graph->load_directed(argv[1], std::atoi(argv[2]));
+Description: Loads the graph structure from the specified file.

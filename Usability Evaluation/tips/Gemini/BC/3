@@ -1,0 +1,142 @@
+Here are the core API functions with their purposes, parameters, and meanings:
+
+1. alloc_vertex_array
+Purpose: Allocates memory for a vertex array.
+Parameters: None.
+Returns: Pointer to the allocated vertex array.
+Example Usage:
+double *num_paths = graph->alloc_vertex_array<double>();
+double *dependencies = graph->alloc_vertex_array<double>();
+
+2. alloc_vertex_subset
+Purpose: Allocates memory for a vertex subset.
+Parameters: None.
+Returns: Pointer to the allocated vertex subset.
+Example Usage:
+VertexSubset *active_all = graph->alloc_vertex_subset();
+VertexSubset *visited = graph->alloc_vertex_subset();
+VertexSubset *active_in = graph->alloc_vertex_subset();
+
+3. fill_vertex_array
+Purpose: Fills a vertex array with a specific value.
+Parameters:
+T *array: Pointer to the vertex array.
+T value: The value to fill the array with.
+Returns: None.
+Example Usage:
+graph->fill_vertex_array(num_paths, 0.0);
+
+4. process_edges
+Purpose: Processes edges using the provided functions.
+Template Parameters:
+R: The type of the result.
+M: The type of the message.
+Parameters:
+std::function<void(VertexId)> sparse_signal: Function called for each source vertex in sparse mode.
+std::function<R(VertexId, M, VertexAdjList<EdgeData>)> sparse_slot: Function called for each edge in sparse mode.
+std::function<void(VertexId, VertexAdjList<EdgeData>)> dense_signal: Function called for each destination vertex in dense mode.
+std::function<R(VertexId, M)> dense_slot: Function called for each message in dense mode.
+Bitmap *active: Bitmap indicating active vertices.
+Bitmap *dense_selective: Optional bitmap for dense selective processing.
+Returns: The aggregated result of type R.
+Example Usage:
+graph->process_edges<VertexId, double>(
+  [&](VertexId src) { graph->emit(src, num_paths[src]); },
+  [&](VertexId src, double msg, VertexAdjList<Empty> outgoing_adj) {
+    // Edge processing logic
+    return 0;
+  },
+  [&](VertexId dst, VertexAdjList<Empty> incoming_adj) {
+    // Edge processing logic
+  },
+  [&](VertexId dst, double msg) {
+    // Edge processing logic
+    return 0;
+  },
+  active_in, visited
+);
+
+5. process_vertices
+Purpose: Processes vertices based on an active bitmap.
+Template Parameter:
+R: The type of the result.
+Parameters:
+std::function<R(VertexId)> process: Function to process each vertex.
+Bitmap *active: Bitmap indicating active vertices.
+Returns: The aggregated result of type R.
+Example Usage:
+VertexId active_vertices = graph->process_vertices<VertexId>(
+  [&](VertexId vtx) {
+    visited->set_bit(vtx);
+    return 1;
+  },
+  active_out
+);
+
+6. emit
+Purpose: Emits a message to a vertex.
+Template Parameter:
+M: The type of the message.
+Parameters:
+VertexId vtx: Target vertex ID.
+M msg: Message to send.
+Returns: None.
+Example Usage:
+graph->emit(dst, sum);
+
+7. transpose
+Purpose: Transposes the graph.
+Parameters: None.
+Returns: None.
+Example Usage:
+graph->transpose();
+
+8. gather_vertex_array
+Purpose: Gathers a vertex array from all partitions.
+Template Parameter:
+T: The type of the elements in the array.
+Parameters:
+T *array: Pointer to the vertex array.
+int root: Root process for gathering.
+Returns: None.
+Example Usage:
+graph->gather_vertex_array(dependencies, 0);
+graph->gather_vertex_array(inv_num_paths, 0);
+
+9. dealloc_vertex_array
+Purpose: Deallocates memory for a vertex array.
+Template Parameter:
+T: The type of the elements in the array.
+Parameters:
+T *array: Pointer to the vertex array.
+Returns: None.
+Example Usage:
+graph->dealloc_vertex_array(dependencies);
+graph->dealloc_vertex_array(inv_num_paths);
+
+10. clear (VertexSubset)
+Purpose: Clears the vertex subset.
+Parameters: None.
+Returns: None.
+Example Usage:
+visited->clear();
+active_in->clear();
+
+11. set_bit (VertexSubset)
+Purpose: Sets the bit for a specific vertex.
+Parameters:
+VertexId vtx: The vertex ID to set the bit for.
+Returns: None.
+Example Usage:
+visited->set_bit(root);
+active_in->set_bit(root);
+
+12. get_bit (VertexSubset)
+Purpose: Gets the bit for a specific vertex.
+Parameters:
+VertexId vtx: The vertex ID to get the bit for.
+Returns: The bit value (boolean).
+Example Usage:
+if (!visited->get_bit(dst)) {
+  // Do something
+}

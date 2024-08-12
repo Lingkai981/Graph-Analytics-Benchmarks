@@ -30,7 +30,7 @@ class Config:
         }
 
     def get_Authorization(self):
-        return 'Bearer pat_o7qs6qPDvl6yoOnAgmYoZxSUHIUlRuaDHPpYQpSBBqVUR8nwXrqVViyhcaTFXtOI'
+        return 'your Authorization key'
 
     def get_url(self):
         return 'https://api.coze.com/open_api/v2/chat'

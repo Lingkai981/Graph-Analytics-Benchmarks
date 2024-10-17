@@ -41,7 +41,7 @@ class Config:
             return str(file_contents)
 
     def get_algoritm(self, platform, algorithm):
-        return 'Refer to the above tips to help me generate the ' + self.get_algorithm_name()[algorithm] + ' algorithm completed code of ' + platform + ' platform.'
+        return 'Refer to the above tips to help me generate the ' + self.get_algorithm_name()[algorithm] + ' algorithm completed code.'
     def get_standard_code(self, platform, algorithm):
         with open(self.file_path + '/code/' + platform + '/' + algorithm, 'r') as file:
             file_contents = file.read()
@@ -60,15 +60,15 @@ class Config:
     def getCode(self, s):
         start_index = s.find("```")
         if start_index != -1:
-            # 找到 "```" 的位置
-            end_index = s.find("```", start_index + 3)  # 加上 "```cpp" 的长度
+            
+            end_index = s.find("```", start_index + 3)  
             if end_index != -1:
-                # 提取 "```cpp" 和 "```" 之间的内容
+                
                 code = s[start_index + 6:end_index]
                 return code
             else:
-                print("找不到结束标记 \"```\"")
+                print("error \"```\"")
                 return -1
         else:
-            print("找不到开始标记 \"```\"")
+            print("error \"```\"")
             return -1

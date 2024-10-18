@@ -1,0 +1,105 @@
+
+#include <test.hpp>
+#include <graphlab.hpp>
+
+struct vertex_data {
+  float betweenness;
+  // Other data members...
+  
+  void save(graphlab::oarchive& oarc) const {
+    oarc << betweenness;
+    // Save other data members...
+  }
+
+  void load(graphlab::iarchive& iarc) {
+    iarc >> betweenness;
+    // Load other data members...
+  }
+};
+
+struct edge_data {
+  // Edge data members...
+  
+  void save(graphlab::oarchive& oarc) const {
+    // Save edge data members...
+  }
+
+  void load(graphlab::iarchive& iarc) {
+    // Load edge data members...
+  }
+};
+
+typedef graphlab::distributed_graph<vertex_data, edge_data> graph_type;
+
+struct BetweenessGather {
+  std::map<int, float> counts;
+  int edge_count;
+
+  BetweenessGather() : edge_count(0) {}
+
+  void save(graphlab::oarchive& oarc) const {
+    oarc << counts << edge_count;
+  }
+
+  void load(graphlab::iarchive& iarc) {
+    iarc >> counts >> edge_count;
+  }
+
+  BetweenessGather& operator+=(const BetweenessGather& other) {
+    for (const auto& kv : other.counts) {
+      counts[kv.first] += kv.second;
+    }
+    edge_count += other.edge_count;
+    return *this;
+  }
+};
+
+class BetweenessAlgorithm : public graphlab::ivertex_program<graph_type, BetweenessGather> {
+public:
+  edge_dir_type gather_edges(icontext_type& context, const vertex_type& vertex) const override {
+    return graphlab::IN_EDGES;
+  }
+
+  BetweenessGather gather(icontext_type& context, const vertex_type& vertex, edge_type& edge) const override {
+    BetweenessGather gather;
+    // Implement the gather logic
+    return gather;
+  }
+
+  void apply(icontext_type& context, vertex_type& vertex, const BetweenessGather& total) override {
+    // Update the vertex data based on the gathered information
+  }
+
+  edge_dir_type scatter_edges(icontext_type& context, const vertex_type& vertex) const override {
+    return graphlab::OUT_EDGES;
+  }
+
+  void scatter(icontext_type& context, const vertex_type& vertex, edge_type& edge) const override {
+    // Implement the scatter logic
+  }
+};
+
+int main(int argc, char** argv) {
+  graphlab::mpi_tools::init(argc, argv);
+  graphlab::distributed_control dc;
+  graphlab::command_line_options clopts("Betweenness Centrality algorithm.");
+  std::string graph_dir;
+  clopts.attach_option("graph", &graph_dir, graph_dir, "The graph file.");
+  if (!clopts.parse(argc, argv)) { 
+    std::cout << "Error parsing arguments." << std::endl; 
+    return EXIT_FAILURE; 
+  }
+
+  graph_type graph(dc, clopts);
+  graph.load_structure(graph_dir, "tsv");
+  graph.finalize();
+  std::cout << "#vertices: " << graph.num_vertices() << " #edges: " << graph.num_edges() << std::endl;
+
+  graphlab::async_consistent_engine<BetweenessAlgorithm> engine(dc, graph, clopts);
+  engine.signal_all();
+  engine.start();
+  std::cout << "Runtime: " << engine.elapsed_seconds() << std::endl;
+
+  graphlab::mpi_tools::finalize();
+  return EXIT_SUCCESS;
+}

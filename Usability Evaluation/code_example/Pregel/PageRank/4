@@ -1,0 +1,120 @@
+#include "basic/test-dev.h"
+#include <vector>
+#include <string>
+#include <algorithm>
+#include <cmath>
+
+using namespace std;
+
+// Define the vertex data structure
+struct PRVertex_pregel {
+    VertexID id;
+    double pr;
+    vector<VertexID> edges;
+
+    PRVertex_pregel() : pr(0) {}
+
+    void add_edge(VertexID vertex) {
+        edges.push_back(vertex);
+    }
+};
+
+// Define the aggregator for PageRank
+class PRAgg_pregel : public Aggregator<PRVertex_pregel, double, double> {
+public:
+    double sum;
+
+    PRAgg_pregel() : sum(0) {}
+
+    virtual void init() override {
+        sum = 0;
+    }
+
+    virtual void stepPartial(PRVertex_pregel* v) override {
+        if (v->edges.size() == 0) {
+            sum += v->pr;
+        }
+    }
+
+    virtual void stepFinal(double* part) override {
+        sum += *part;
+    }
+
+    virtual double* finishPartial() override {
+        return &sum;
+    }
+
+    virtual double* finishFinal() override {
+        return &sum;
+    }
+};
+
+// Define the combiner for message aggregation (if needed)
+class PRCombiner_pregel : public Combiner<double> {
+public:
+    virtual void combine(double& old, const double& new_msg) override {
+        old += new_msg;
+    }
+};
+
+// Define the vertex class
+class PRVertex : public Vertex<VertexID, PRVertex_pregel, double> {
+public:
+    virtual void compute(MessageContainer& messages) override {
+        if (step_num() == 1) {
+            value().pr = 1.0 / get_vnum();
+        } else {
+            double sum = accumulate(messages.begin(), messages.end(), 0.0);
+            double residual = *static_cast<double*>(get_agg());
+            value().pr = 0.15 / get_vnum() + 0.85 * (sum + residual);
+        }
+
+        if (step_num() < ROUND) {
+            double msg = value().pr / value().edges.size();
+            for (auto& edge : value().edges) {
+                send_message(edge, msg);
+            }
+        } else {
+            vote_to_halt();
+        }
+    }
+};
+
+// Define the worker class
+class PRWorker_pregel : public Worker<PRVertex, PRAgg_pregel> {
+public:
+    virtual PRVertex* toVertex(char* line) override {
+        PRVertex* vertex = new PRVertex;
+        stringstream ss(line);
+        ss >> vertex->id;
+        VertexID neighbor;
+        while (ss >> neighbor) {
+            vertex->value().add_edge(neighbor);
+        }
+        return vertex;
+    }
+
+    virtual void toline(PRVertex* v, BufferedWriter& writer) override {
+        writer << v->id << "\t" << v->value().pr << endl;
+    }
+};
+
+// Define the main PageRank function
+void pregel_pagerank(string input_path, string output_path, bool use_combiner) {
+    WorkerParams params;
+    params.input_path = input_path;
+    params.output_path = output_path;
+    params.force_write = true;
+    params.native_dispatcher = false;
+
+    PRWorker_pregel worker;
+    PRAgg_pregel aggregator;
+
+    if (use_combiner) {
+        PRCombiner_pregel combiner;
+        worker.setCombiner(&combiner);
+    }
+
+    worker.setAggregator(&aggregator);
+    worker.run(params);
+}

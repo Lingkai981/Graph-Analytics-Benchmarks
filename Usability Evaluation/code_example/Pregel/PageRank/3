@@ -1,0 +1,98 @@
+#include "basic/test-dev.h"
+#include "test_app_xxx.h"
+
+// Define the vertex structure for PageRank
+struct PRVertex_pregel : public Vertex<VertexID, double, double> {
+    double old_pr;
+
+    void compute(MessageContainer& messages) {
+        if (global_step_num == 1) {
+            value() = 1.0;
+        } else {
+            double sum = 0;
+            for (auto& msg : messages) {
+                sum += msg;
+            }
+            old_pr = value();
+            value() = 0.15 + 0.85 * sum;
+        }
+
+        if (global_step_num < 30) {
+            for (auto& edge : edges) {
+                send_message(edge, value() / edges.size());
+            }
+        } else {
+            vote_to_halt();
+        }
+    }
+};
+
+// Define the combiner for PageRank
+struct PRCombiner_pregel : public Combiner<double> {
+    virtual void combine(double& old, const double& new_msg) {
+        old += new_msg;
+    }
+};
+
+// Define the aggregator for PageRank
+struct PRAgg_pregel : public Aggregator<PRVertex_pregel, double, double> {
+    double sum;
+
+    virtual void init() {
+        sum = 0;
+    }
+
+    virtual void stepPartial(PRVertex_pregel* v) {
+        sum += v->value();
+    }
+
+    virtual void stepFinal(double* part) {
+        sum += *part;
+    }
+
+    virtual double* finishPartial() {
+        return &sum;
+    }
+
+    virtual double* finishFinal() {
+        return &sum;
+    }
+};
+
+// Worker class for PageRank
+class PRWorker_pregel : public Worker<PRVertex_pregel, PRAgg_pregel> {
+public:
+    virtual PRVertex_pregel* toVertex(char* line) {
+        PRVertex_pregel* v = new PRVertex_pregel;
+        istringstream ssin(line);
+        ssin >> v->id;
+        int num;
+        ssin >> num;
+        for (int i = 0; i < num; i++) {
+            VertexID nb;
+            ssin >> nb;
+            v->edges.push_back(nb);
+        }
+        return v;
+    }
+
+    virtual void toline(PRVertex_pregel* v, BufferedWriter& writer) {
+        writer.write(to_string(v->id) + " " + to_string(v->value()) + "\n");
+    }
+};
+
+void test_pagerank(string in_path, string out_path, bool force_write) {
+    WorkerParams param;
+    param.input_path = in_path;
+    param.output_path = out_path;
+    param.force_write = force_write;
+    param.native_dispatcher = false;
+
+    PRWorker_pregel worker;
+    PRCombiner_pregel combiner;
+    PRAgg_pregel agg;
+
+    worker.setCombiner(&combiner);
+    worker.setAggregator(&agg);
+    worker.run(param);
+}

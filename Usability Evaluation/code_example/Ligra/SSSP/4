@@ -1,0 +1,100 @@
+#include "test.h"
+
+struct BF_F {
+    int* ShortestPathLen;
+    int* Visited;
+
+    BF_F(int* _ShortestPathLen, int* _Visited) : ShortestPathLen(_ShortestPathLen), Visited(_Visited) {}
+
+    bool update(int s, int d, int edgeLen) {
+        int newDist = ShortestPathLen[s] + edgeLen;
+        if (ShortestPathLen[d] > newDist) {
+            ShortestPathLen[d] = newDist;
+            if (Visited[d] == 0) {
+                Visited[d] = 1;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    bool updateAtomic(int s, int d, int edgeLen) {
+        int newDist = ShortestPathLen[s] + edgeLen;
+        return (writeMin(&ShortestPathLen[d], newDist) && CAS(&Visited[d], 0, 1));
+    }
+
+    bool cond(int d) {
+        return true;
+    }
+};
+
+struct BF_Vertex_F {
+    int* Visited;
+
+    BF_Vertex_F(int* _Visited) : Visited(_Visited) {}
+
+    bool operator()(int i) {
+        Visited[i] = 0;
+        return true;
+    }
+};
+
+std::pair<int*, int*> INIT(int start, int n) {
+    int* ShortestPathLen = new int[n];
+    std::fill(ShortestPathLen, ShortestPathLen + n, INT_MAX / 2);
+    ShortestPathLen[start] = 0;
+
+    int* Visited = new int[n];
+    std::fill(Visited, Visited + n, 0);
+
+    return {ShortestPathLen, Visited};
+}
+
+int main(int argc, char* argv[]) {
+    // Initialize graph parameters
+    graph<vertex> GA = loadGraph(argv[1]); // Load graph from file
+    commandLine P(argc, argv);
+    int start = P.getOptionLongValue("-r", 0);
+    int n = GA.n;
+
+    // Initialize ShortestPathLen and Visited arrays
+    auto [ShortestPathLen, Visited] = INIT(start, n);
+
+    // Initialize the frontier
+    vertexSubset Frontier(n, start);
+
+    // Initialize round counter
+    int round = 0;
+
+    // While Frontier is not empty
+    while (Frontier.numNonzeros() > 0) {
+        if (round == n) {
+            for (int i = 0; i < n; i++) {
+                ShortestPathLen[i] = -(INT_MAX / 2);
+            }
+            break;
+        }
+
+        // Apply edgeMap to update distances
+        vertexSubset output = edgeMap(GA, Frontier, BF_F(ShortestPathLen, Visited), GA.m / 20, dense_forward);
+
+        // Reset visited vertices
+        vertexMap(output, BF_Vertex_F(Visited));
+
+        // Delete previous frontier
+        Frontier.del();
+
+        // Update frontier
+        Frontier = output;
+
+        // Increment round counter
+        round += 1;
+    }
+
+    // Clean up
+    Frontier.del();
+    delete[] Visited;
+    delete[] ShortestPathLen;
+
+    return 0;
+}

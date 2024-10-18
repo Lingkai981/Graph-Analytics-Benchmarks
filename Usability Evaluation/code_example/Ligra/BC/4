@@ -1,0 +1,139 @@
+#include "test.h"
+
+// Functors for the BC algorithm
+struct BC_F {
+    float* NumPaths;
+    bool* Visited;
+
+    BC_F(float* _NumPaths, bool* _Visited) : NumPaths(_NumPaths), Visited(_Visited) {}
+
+    bool update(uintE s, uintE d) {
+        float oldV = NumPaths[d];
+        NumPaths[d] += NumPaths[s];
+        return oldV == 0.0;
+    }
+
+    bool updateAtomic(uintE s, uintE d) {
+        float oldV, newV;
+        do {
+            oldV = NumPaths[d];
+            newV = oldV + NumPaths[s];
+        } while (!CAS(&NumPaths[d], oldV, newV));
+        return oldV == 0.0;
+    }
+
+    bool cond(uintE d) {
+        return !Visited[d];
+    }
+};
+
+struct BC_Vertex_F {
+    bool* Visited;
+
+    BC_Vertex_F(bool* _Visited) : Visited(_Visited) {}
+
+    void operator()(uintE v) {
+        Visited[v] = true;
+    }
+};
+
+struct BC_Back_F {
+    float* Dependencies;
+    bool* Visited;
+
+    BC_Back_F(float* _Dependencies, bool* _Visited) : Dependencies(_Dependencies), Visited(_Visited) {}
+
+    bool update(uintE s, uintE d) {
+        float oldV = Dependencies[d];
+        Dependencies[d] += Dependencies[s];
+        return oldV == 0.0;
+    }
+
+    bool updateAtomic(uintE s, uintE d) {
+        float oldV, newV;
+        do {
+            oldV = Dependencies[d];
+            newV = oldV + Dependencies[s];
+        } while (!CAS(&Dependencies[d], oldV, newV));
+        return oldV == 0.0;
+    }
+
+    bool cond(uintE d) {
+        return !Visited[d];
+    }
+};
+
+struct BC_Back_Vertex_F {
+    bool* Visited;
+    float* Dependencies;
+    float* inverseNumPaths;
+
+    BC_Back_Vertex_F(bool* _Visited, float* _Dependencies, float* _inverseNumPaths)
+        : Visited(_Visited), Dependencies(_Dependencies), inverseNumPaths(_inverseNumPaths) {}
+
+    void operator()(uintE v) {
+        Visited[v] = true;
+        Dependencies[v] += inverseNumPaths[v];
+    }
+};
+
+void Compute_BC(graph<vertex>& GA, uintE start) {
+    long n = GA.n;
+
+    float* NumPaths = new float[n]();
+    bool* Visited = new bool[n]();
+    NumPaths[start] = 1.0;
+    Visited[start] = true;
+
+    vertexSubset Frontier(n, start);
+    std::vector<vertexSubset> Levels;
+    Levels.push_back(Frontier);
+
+    while (!Frontier.isEmpty()) {
+        Frontier = edgeMap(GA, Frontier, BC_F(NumPaths, Visited));
+        vertexMap(Frontier, BC_Vertex_F(Visited));
+        Levels.push_back(Frontier);
+    }
+
+    float* Dependencies = new float[n]();
+    float* inverseNumPaths = new float[n];
+    std::fill(Visited, Visited + n, false);
+    for (long i = 0; i < n; ++i) {
+        if (NumPaths[i] != 0) {
+            inverseNumPaths[i] = 1.0 / NumPaths[i];
+        }
+    }
+
+    Levels.pop_back();
+    Frontier = Levels.back();
+    vertexMap(Frontier, BC_Back_Vertex_F(Visited, Dependencies, inverseNumPaths));
+
+    GA.transpose();
+
+    for (long i = Levels.size() - 2; i >= 0; --i) {
+        Frontier = edgeMap(GA, Frontier, BC_Back_F(Dependencies, Visited), no_output);
+        vertexMap(Frontier, BC_Back_Vertex_F(Visited, Dependencies, inverseNumPaths));
+        Levels.pop_back();
+    }
+
+    for (long i = 0; i < n; ++i) {
+        if (inverseNumPaths[i] != 0) {
+            Dependencies[i] = (Dependencies[i] - inverseNumPaths[i]) / inverseNumPaths[i];
+        }
+    }
+
+    delete[] NumPaths;
+    delete[] Visited;
+    delete[] Dependencies;
+    delete[] inverseNumPaths;
+}
+
+int main() {
+    // Assume GA is a pre-defined graph
+    graph<vertex> GA = ...; // Load or define your graph
+    uintE start = ...; // Define your starting vertex
+
+    Compute_BC(GA, start);
+
+    return 0;
+}

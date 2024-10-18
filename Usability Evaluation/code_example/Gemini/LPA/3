@@ -1,0 +1,87 @@
+1. vertexMap
+Function Signature:
+template<class VTYPE, class F>
+inline VSet vertexMap(VSet &U, F &f);
+Parameters:
+VSet &U: A vertex set to be processed.
+F &f: A function or functor to apply to each vertex in the set.
+Usage Example:
+DefineMapV(init) { v.c = id(v); v.cc = -1; v.s.clear(); return v; };
+vertexSubset A = vertexMap(All, CTrueV, init);
+Explanation:
+This function applies the given function f to each vertex in the vertex set U. In the provided code, it is used to initialize vertices with specific properties.
+
+2. edgeMapDenseFunction
+Function Signature:
+template<class VTYPE, class F, class M, class C, class H>
+VSet edgeMapDenseFunction(Graph<VTYPE> &G, VSet &U, H h, VSet &T, F &f, M &m, C &c, bool b = true);
+Parameters:
+
+Graph<VTYPE> &G: The graph on which the operation is performed.
+VSet &U: A vertex set representing active vertices.
+H &h: A handler or heuristic to process edges.
+VSet &T: Target vertex set for the results.
+F &f: Function or functor to apply to each edge.
+M &m: Function or functor to apply to each modified vertex.
+C &c: Conditional function or functor to filter edges.
+bool b: A boolean flag to control additional behavior (default is true).
+Usage Example:
+DefineMapE(update) { d.s.push_back(s.c); };
+A = edgeMapDense(All, EU, CTrueE, update, CTrueV);
+Explanation:
+This function performs a dense edge mapping operation, where the function f is applied to edges, and the results are collected in the vertex set T. It is used in the provided code to update vertices based on their neighbors' properties.
+
+3. DefineMapV
+Macro Definition:
+#define DefineMapV(name) auto name = [&](auto &v)
+Usage Example:
+DefineMapV(init) { v.c = id(v); v.cc = -1; v.s.clear(); return v; };
+Explanation:
+This macro is used to define a lambda function that can be applied to vertices. It simplifies the creation of vertex processing functions. In the code, init, local1, and local2 are examples of such functions.
+
+4. DefineMapE
+Macro Definition:
+#define DefineMapE(name) auto name = [&](auto &s, auto &d)
+Usage Example:
+DefineMapE(update) { d.s.push_back(s.c); };
+Explanation:
+This macro is used to define a lambda function that can be applied to edges. It simplifies the creation of edge processing functions. In the code, update is an example of such a function.
+
+5. DefineFV
+Macro Definition:
+#define DefineFV(name) auto name = [&](auto &v)
+Usage Example:
+DefineFV(filter) { return v.cc != v.c; };
+Explanation:
+This macro is used to define a lambda function that can be used as a filter for vertices. In the code, filter is an example of such a function to filter vertices based on a condition.
+
+6. Size
+Function Signature:
+int Size(VSet &U);
+Parameters:
+VSet &U: A vertex set whose size is to be determined.
+Usage Example:
+for (int i = 0; i < 100 && Size(A) > 0; i++) {
+    print("Round %d: size=%d\n", i, Size(A));
+}
+Explanation:
+This function returns the number of vertices in the vertex set U. It is used in the code to control the loop iteration based on the size of the active vertex set.
+
+7. GetTime
+Function Signature:
+double GetTime();
+Usage Example:
+print("total time=%0.3lf secs\n", GetTime());
+Explanation:
+This function returns the current time, typically used for measuring the execution time of code segments. In the provided code, it is used to print the total execution time at the end of the program.
+
+8. SetDataset
+Function Signature:
+void SetDataset(const string &inputFile, const string &outputFile);
+Parameters:
+const string &inputFile: The input file containing the dataset.
+const string &outputFile: The output file to store results.
+Usage Example:
+SetDataset(argv[1], argv[2]);
+Explanation:
+This function sets up the dataset for the computation by specifying the input and output files. It is called at the beginning of the main function to initialize the dataset.

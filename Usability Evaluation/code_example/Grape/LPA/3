@@ -1,0 +1,143 @@
+#include <test/test.h>
+
+// Define the VertexDataContext class
+template <typename FRAG_T, typename DATA_T>
+class VertexDataContext {
+public:
+    using fragment_t = FRAG_T;
+    using vertex_t = typename fragment_t::vertex_t;
+    using parallel_engine_t = typename fragment_t::parallel_engine_t;
+    using message_manager_t = typename fragment_t::message_manager_t;
+
+    VertexDataContext() : preprocess_time(0), exec_time(0) {}
+
+    void Init(FRAG_T& frag, parallel_engine_t& engine, message_manager_t& messages) {
+        auto inner_vertices = frag.InnerVertices();
+        labels.Init(inner_vertices);
+        changed.Init(inner_vertices);
+        preprocess_time -= GetCurrentTime();
+        preprocess_time += GetCurrentTime();
+    }
+
+    void Finalize() {
+        preprocess_time = 0;
+        exec_time = 0;
+    }
+
+    VertexArray<vertex_t, DATA_T> labels;
+    VertexSet changed;
+    double preprocess_time;
+    double exec_time;
+};
+
+// Define the ParallelAppBase class
+template <typename APP_T>
+class ParallelAppBase {
+public:
+    using fragment_t = typename APP_T::fragment_t;
+    using context_t = typename APP_T::context_t;
+    using message_manager_t = typename APP_T::message_manager_t;
+
+    void PEval(const fragment_t& frag, context_t& ctx, message_manager_t& messages) {
+        auto inner_vertices = frag.InnerVertices();
+        ForEach(inner_vertices, [&frag, &ctx](int tid, vertex_t v) {
+            ctx.labels[v] = frag.GetInnerVertexId(v);
+            ctx.changed.Insert(v);
+        });
+        messages.ForceContinue();
+    }
+
+    void IncEval(const fragment_t& frag, context_t& ctx, message_manager_t& messages) {
+        auto inner_vertices = frag.InnerVertices();
+        ctx.exec_time -= GetCurrentTime();
+
+        ForEach(inner_vertices, [&frag, &ctx, &messages](int tid, vertex_t v) {
+            if (ctx.changed.Exist(v)) {
+                ctx.changed.Erase(v);
+                auto new_label = ctx.labels[v];
+                messages.SendMsgThroughOEdges<fragment_t, typename context_t::DATA_T>(frag, v, new_label, tid);
+            }
+        });
+
+        messages.ParallelProcess<fragment_t, typename context_t::DATA_T>(thread_num(), frag, [&ctx](int tid, vertex_t u, const typename context_t::DATA_T& msg) {
+            if (ctx.labels[u] != msg) {
+                ctx.labels[u] = msg;
+                ctx.changed.Insert(u);
+            }
+        });
+
+        ctx.exec_time += GetCurrentTime();
+        if (!ctx.changed.Empty()) {
+            messages.ForceContinue();
+        }
+    }
+};
+
+// Define the ParallelMessageManager class
+class ParallelMessageManager {
+public:
+    void InitChannels(thread_num_t thread_num) {
+        // Initialize message channels
+    }
+
+    void Start() {
+        // Start the message manager
+    }
+
+    void Stop() {
+        // Stop the message manager
+    }
+
+    template <typename FRAG_T, typename DATA_T>
+    void SendMsgThroughOEdges(const FRAG_T& frag, typename FRAG_T::vertex_t v, const DATA_T& msg, int tid) {
+        // Send message through outgoing edges
+    }
+
+    template <typename FRAG_T, typename DATA_T>
+    void ParallelProcess(int thread_num, const FRAG_T& frag, std::function<void(int, typename FRAG_T::vertex_t, const DATA_T&)> func) {
+        // Process messages in parallel
+    }
+
+    void ForceContinue() {
+        // Force continuation of evaluation
+    }
+};
+
+// Define the LabelPropagationApp class
+template <typename FRAG_T>
+class LabelPropagationApp : public ParallelAppBase<LabelPropagationApp<FRAG_T>> {
+public:
+    using fragment_t = FRAG_T;
+    using context_t = VertexDataContext<fragment_t, typename fragment_t::label_t>;
+    using message_manager_t = ParallelMessageManager;
+
+    void PEval(const fragment_t& frag, context_t& ctx, message_manager_t& messages) {
+        ParallelAppBase<LabelPropagationApp<FRAG_T>>::PEval(frag, ctx, messages);
+    }
+
+    void IncEval(const fragment_t& frag, context_t& ctx, message_manager_t& messages) {
+        ParallelAppBase<LabelPropagationApp<FRAG_T>>::IncEval(frag, ctx, messages);
+    }
+};
+
+int main() {
+    // Example usage
+    using fragment_t = /* Define your fragment type */;
+    using label_t = /* Define your label type */;
+    fragment_t fragment;
+    VertexDataContext<fragment_t, label_t> context;
+    ParallelMessageManager messages;
+    LabelPropagationApp<fragment_t> app;
+
+    context.Init(fragment, /* parallel_engine */, messages);
+    messages.InitChannels(/* thread_num */);
+    messages.Start();
+
+    app.PEval(fragment, context, messages);
+    app.IncEval(fragment, context, messages);
+
+    messages.Stop();
+    context.Finalize();
+
+    return 0;
+}

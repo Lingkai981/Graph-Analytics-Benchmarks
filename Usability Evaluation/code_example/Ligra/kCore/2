@@ -1,0 +1,75 @@
+#include "test.h"
+
+// Function to apply to each edge
+struct kCoreEdgeFunc {
+    uintE* degrees;
+    int k;
+
+    kCoreEdgeFunc(uintE* _degrees, int _k) : degrees(_degrees), k(_k) {}
+
+    inline bool update(uintE s, uintE d) {
+        if (degrees[d] > k) {
+            if (__sync_fetch_and_sub(&degrees[d], 1) == k + 1) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    inline bool updateAtomic(uintE s, uintE d) {
+        if (degrees[d] > k) {
+            if (__sync_fetch_and_sub(&degrees[d], 1) == k + 1) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    inline bool cond(uintE d) {
+        return degrees[d] > k;
+    }
+};
+
+// Function to apply to each vertex
+struct kCoreVertexFunc {
+    uintE* degrees;
+    int k;
+
+    kCoreVertexFunc(uintE* _degrees, int _k) : degrees(_degrees), k(_k) {}
+
+    inline bool operator()(uintE v) {
+        return degrees[v] > k;
+    }
+};
+
+vertexSubset kCore(graph<vertex>& GA, int k) {
+    long n = GA.n;
+    uintE* degrees = newA(uintE, n);
+
+    parallel_for(long i = 0; i < n; i++) {
+        degrees[i] = GA.V[i].getOutDegree();
+    }
+
+    vertexSubset Frontier(n, n); // Initially, all vertices are in the frontier
+
+    while (Frontier.size() > 0) {
+        Frontier = edgeMap(GA, Frontier, kCoreEdgeFunc(degrees, k), -1, no_dense);
+        Frontier = vertexFilter(Frontier, kCoreVertexFunc(degrees, k));
+    }
+
+    delete[] degrees;
+    return Frontier;
+}
+
+int main(int argc, char* argv[]) {
+    commandLine P(argc, argv);
+    char* filename = P.getArgument(0);
+    int k = P.getOptionIntValue("-k", 3); // Default k value is 3
+
+    graph<vertex> GA = readGraph<vertex>(filename);
+    vertexSubset kCoreVertices = kCore(GA, k);
+
+    std::cout << "Number of vertices in the " << k << "-core: " << kCoreVertices.size() << std::endl;
+
+    return 0;
+}

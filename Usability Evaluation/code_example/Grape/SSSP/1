@@ -1,0 +1,76 @@
+
+#include <test/test.h>
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <limits>
+
+using namespace std;
+
+const int INF = numeric_limits<int>::max();
+
+struct Edge {
+    int to, weight;
+};
+
+void dijkstra(int source, const vector<vector<Edge>>& graph, vector<int>& distances) {
+    int n = graph.size();
+    distances.assign(n, INF);
+    distances[source] = 0;
+
+    priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;
+    pq.push({0, source});
+
+    while (!pq.empty()) {
+        int current_distance = pq.top().first;
+        int u = pq.top().second;
+        pq.pop();
+
+        if (current_distance > distances[u]) {
+            continue;
+        }
+
+        for (const Edge& edge : graph[u]) {
+            int v = edge.to;
+            int weight = edge.weight;
+
+            if (distances[u] + weight < distances[v]) {
+                distances[v] = distances[u] + weight;
+                pq.push({distances[v], v});
+            }
+        }
+    }
+}
+
+int main() {
+    int n, m;
+    cout << "Enter the number of vertices and edges: ";
+    cin >> n >> m;
+
+    vector<vector<Edge>> graph(n);
+    cout << "Enter the edges (u, v, weight):" << endl;
+    for (int i = 0; i < m; ++i) {
+        int u, v, weight;
+        cin >> u >> v >> weight;
+        graph[u].push_back({v, weight});
+        graph[v].push_back({u, weight}); // If the graph is directed, remove this line.
+    }
+
+    int source;
+    cout << "Enter the source vertex: ";
+    cin >> source;
+
+    vector<int> distances;
+    dijkstra(source, graph, distances);
+
+    cout << "Shortest distances from source " << source << " to all vertices:" << endl;
+    for (int i = 0; i < n; ++i) {
+        if (distances[i] == INF) {
+            cout << "Vertex " << i << ": INF" << endl;
+        } else {
+            cout << "Vertex " << i << ": " << distances[i] << endl;
+        }
+    }
+
+    return 0;
+}

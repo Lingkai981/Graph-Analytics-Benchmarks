@@ -1,0 +1,55 @@
+#include "../core/api.h"
+
+// Define the structure to keep track of triangle count
+struct TriangleCount {
+    int count;
+
+    TriangleCount() : count(0) {}
+
+    void operator+=(const TriangleCount & other) {
+        count += other.count;
+    }
+};
+
+// Function to count triangles per vertex
+VERTEXMAP(VertexTriangleCount) {
+    for (auto v : U) {
+        vertexSubset<TriangleCount> neighbors = G.getNeighbors(v);
+        for (auto u : neighbors) {
+            for (auto w : G.getNeighbors(u)) {
+                if (G.hasNeighbor(v, w)) {
+                    output[v].count += 1;
+                }
+            }
+        }
+    }
+    return output;
+}
+
+// Function to apply the triangle counting algorithm
+void TriangleCounting(Graph<int> &G, vertexSubset<int> &U) {
+    // Apply vertex map to count triangles per vertex
+    auto triangleCounts = vertexMap<VertexTriangleCount>(G, U);
+
+    // Reduce the result to get the total count of triangles
+    int totalTriangles = 0;
+    for (auto v : triangleCounts) {
+        totalTriangles += triangleCounts[v].count;
+    }
+
+    // Divide by 3 to get the actual number of triangles (each triangle is counted thrice, one per vertex)
+    totalTriangles /= 3;
+
+    std::cout << "Total triangles: " << totalTriangles << std::endl;
+}
+
+int main() {
+    // Initialization and loading of graph G and vertex set U
+    Graph<int> G;
+    vertexSubset<int> U = G.getAllVertices();
+
+    // Call the Triangle Counting algorithm
+    TriangleCounting(G, U);
+
+    return 0;
+}

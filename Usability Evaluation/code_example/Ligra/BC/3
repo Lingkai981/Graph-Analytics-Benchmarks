@@ -1,0 +1,90 @@
+#include "test.h"
+#include <limits>
+#include <vector>
+#include <queue>
+#include <stack>
+#include <algorithm>
+#include <iostream>
+
+using namespace std;
+
+// Functor for the edgeMap function
+struct BC_F {
+    vector<long>& NumPaths;
+    vector<double>& Visited;
+
+    BC_F(vector<long>& np, vector<double>& v) : NumPaths(np), Visited(v) {}
+
+    inline bool update(uintE s, uintE d) {
+        if (Visited[d] == -1) {
+            Visited[d] = Visited[s] + 1;
+            return true;
+        }
+        return false;
+    }
+
+    inline bool cond(uintE d) {
+        return Visited[d] == -1;
+    }
+};
+
+// Functor for the vertexMap function
+struct BC_Vertex_F {
+    vector<double>& Visited;
+
+    BC_Vertex_F(vector<double>& v) : Visited(v) {}
+
+    inline bool operator()(uintE v) {
+        return Visited[v] != -1;
+    }
+};
+
+void BetweennessCentrality(graph<vertex>& GA, vector<double>& BC) {
+    long n = GA.n;
+    vector<double> Visited(n, -1);
+    vector<long> NumPaths(n, 0);
+    vector<double> Delta(n, 0);
+    stack<uintE> S;
+    vector<vector<uintE>> Pred(n);
+
+    for (uintE s = 0; s < n; s++) {
+        fill(Visited.begin(), Visited.end(), -1);
+        fill(NumPaths.begin(), NumPaths.end(), 0);
+        fill(Delta.begin(), Delta.end(), 0);
+        for (auto& p : Pred) p.clear();
+
+        Visited[s] = 0;
+        NumPaths[s] = 1;
+        vertexSubset Frontier(n, s);
+
+        while (!Frontier.isEmpty()) {
+            vertexSubset output = edgeMap(GA, Frontier, BC_F(NumPaths, Visited));
+            vertexMap(output, BC_Vertex_F(Visited));
+            Frontier.del();
+            Frontier = output;
+        }
+
+        while (!S.empty()) {
+            uintE w = S.top();
+            S.pop();
+            for (uintE v : Pred[w]) {
+                Delta[v] += (NumPaths[v] / (double)NumPaths[w]) * (1 + Delta[w]);
+            }
+            if (w != s) BC[w] += Delta[w];
+        }
+    }
+}
+
+int main() {
+    // Assume GA is initialized and populated with the graph data
+    graph<vertex> GA;
+    vector<double> BC(GA.n, 0.0);
+
+    BetweennessCentrality(GA, BC);
+
+    for (size_t i = 0; i < BC.size(); i++) {
+        cout << "Vertex " << i << ": " << BC[i] << endl;
+    }
+
+    return 0;
+}

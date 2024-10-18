@@ -1,0 +1,136 @@
+#include <test/test.h>
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+using namespace test;
+
+template <typename FRAG_T, typename DATA_T>
+class VertexDataContext : public VertexDataContextBase<FRAG_T, DATA_T> {
+public:
+  using fragment_t = FRAG_T;
+  using data_t = DATA_T;
+  using vertex_t = typename fragment_t::vertex_t;
+
+  DenseVertexSet<vertex_t> curr_modified, next_modified;
+  std::vector<data_t> comp_id;
+
+  void Init(FRAG_T& frag, parallel_engine_t& engine, message_manager_t& messages) override {
+    curr_modified.Init(frag.Vertices());
+    next_modified.Init(frag.Vertices());
+    comp_id.resize(frag.Vertices().size());
+  }
+
+  void Finalize() override {
+    comp_id.clear();
+  }
+
+  void Output(std::ostream& os) override {
+    for (auto v : frag.InnerVertices()) {
+      os << frag.GetId(v) << " " << comp_id[v] << std::endl;
+    }
+  }
+};
+
+template <typename APP_T>
+class ParallelAppBase {
+public:
+  using fragment_t = typename APP_T::fragment_t;
+  using context_t = typename APP_T::context_t;
+  using message_manager_t = typename APP_T::message_manager_t;
+
+  virtual void PEval(const fragment_t& frag, context_t& ctx, message_manager_t& messages) = 0;
+  virtual void IncEval(const fragment_t& frag, context_t& ctx, message_manager_t& messages) = 0;
+};
+
+class WCC : public ParallelAppBase<WCC> {
+public:
+  using fragment_t = MyFragment;
+  using context_t = WCCContext;
+  using message_manager_t = ParallelMessageManager;
+
+  void PEval(const fragment_t& frag, context_t& ctx, message_manager_t& messages) override {
+    messages.InitChannels(thread_num());
+    for (auto v : frag.InnerVertices()) {
+      ctx.comp_id[v] = frag.GetInnerVertexGid(v);
+    }
+    for (auto v : frag.OuterVertices()) {
+      ctx.comp_id[v] = frag.GetOuterVertexGid(v);
+    }
+    PropagateLabelPull(frag, ctx, messages);
+    if (!ctx.next_modified.Empty()) {
+      messages.ForceContinue();
+      ctx.curr_modified.Swap(ctx.next_modified);
+    }
+  }
+
+  void IncEval(const fragment_t& frag, context_t& ctx, message_manager_t& messages) override {
+    ctx.next_modified.ParallelClear(GetThreadPool());
+    ProcessMessages(frag, ctx, messages);
+    double rate = CalculateActiveVertexRate(ctx);
+    if (rate > 0.1) {
+      PropagateLabelPull(frag, ctx, messages);
+    } else {
+      PropagateLabelPush(frag, ctx, messages);
+    }
+    if (!ctx.next_modified.Empty()) {
+      messages.ForceContinue();
+      ctx.curr_modified.Swap(ctx.next_modified);
+    }
+  }
+
+private:
+  void PropagateLabelPull(const fragment_t& frag, context_t& ctx, message_manager_t& messages) {
+    for (auto v : frag.InnerVertices()) {
+      auto min_comp = ctx.comp_id[v];
+      for (auto u : frag.GetOutgoingAdj(v)) {
+        min_comp = std::min(min_comp, ctx.comp_id[u]);
+      }
+      if (min_comp < ctx.comp_id[v]) {
+        ctx.comp_id[v] = min_comp;
+        ctx.next_modified.Insert(v);
+      }
+    }
+    for (auto v : frag.OuterVertices()) {
+      auto min_comp = ctx.comp_id[v];
+      for (auto u : frag.GetOutgoingAdj(v)) {
+        min_comp = std::min(min_comp, ctx.comp_id[u]);
+      }
+      if (min_comp < ctx.comp_id[v]) {
+        ctx.comp_id[v] = min_comp;
+        ctx.next_modified.Insert(v);
+        messages.SyncState(v, min_comp);
+      }
+    }
+  }
+
+  void PropagateLabelPush(const fragment_t& frag, context_t& ctx, message_manager_t& messages) {
+    for (auto v : ctx.curr_modified) {
+      for (auto u : frag.GetOutgoingAdj(v)) {
+        if (ctx.comp_id[u] > ctx.comp_id[v]) {
+          ctx.comp_id[u] = ctx.comp_id[v];
+          ctx.next_modified.Insert(u);
+        }
+      }
+    }
+    for (auto v : frag.OuterVertices()) {
+      if (ctx.curr_modified.Exist(v)) {
+        messages.SyncState(v, ctx.comp_id[v]);
+      }
+    }
+  }
+
+  void ProcessMessages(const fragment_t& frag, context_t& ctx, message_manager_t& messages) {
+    // Implement message processing logic here.
+  }
+
+  double CalculateActiveVertexRate(const context_t& ctx) {
+    // Implement active vertex rate calculation here.
+    return 0.0;
+  }
+};
+
+int main(int argc, char** argv) {
+  // Initialize the GRAPE platform and run the WCC algorithm.
+  return 0;
+}

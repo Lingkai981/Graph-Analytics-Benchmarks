@@ -1,0 +1,58 @@
+#include "../core/api.h"
+
+// k-Core algorithm on the FLASH platform
+template <class VTYPE>
+void kCore(Graph<VTYPE> &G, int k) {
+    // Initialize the vertex subset
+    auto All = G.getAllVertices();
+    
+    // Define mapping function: initialize vertex degree
+    DefineMapV(init) { v.d = deg(v); };
+    vertexSubset vertices = vertexMap(All, CTrueV, init);
+
+    // Define filter function: check if vertex degree >= k
+    DefineFV(check) { return v.d >= k; };
+
+    // Start processing
+    bool change = true;
+    while (change) {
+        change = false;
+
+        // Define edge mapping function: decrement degree for vertices
+        DefineMapE(decrement) { d.d--; return d; };
+
+        // Apply edgeMapSparse
+        vertices = edgeMapSparse(vertices, EU, CTrueE, decrement, check, Reduce());
+
+        // Check if there is any vertex whose degree is still >= k
+        int len = Size(vertices);
+        if (len > 0) {
+            change = true;
+        }
+    }
+
+    // Output the k-core nodes
+    for (auto v : vertices) {
+        if (use_f(check)(v)) {
+            // Print vertex id
+            std::cout << "Vertex " << v.id << " is in the k-core\n";
+        }
+    }
+}
+
+int main() {
+    // Load graph
+    Graph<int> G;
+    G.loadGraph("path_to_graph");
+
+    // Get k-core parameter
+    int k = 3;  // Example value for k
+
+    // Measure execution time
+    double start = GetTime();
+    kCore(G, k);
+    double end = GetTime();
+
+    std::cout << "Execution time: " << (end - start) << " seconds\n";
+    return 0;
+}

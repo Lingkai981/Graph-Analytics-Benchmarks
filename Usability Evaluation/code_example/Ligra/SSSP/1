@@ -1,0 +1,51 @@
+#include "test.h"
+#include <limits>
+#include <queue>
+#include <vector>
+
+// 定义一个常量表示无穷大
+const int INF = std::numeric_limits<int>::max();
+
+// BFS算法实现单源最短路径
+void BFS_SSSP(const Graph &G, int source, std::vector<int> &distances) {
+    std::queue<int> q;
+    distances[source] = 0;
+    q.push(source);
+
+    while (!q.empty()) {
+        int u = q.front();
+        q.pop();
+
+        for (int v : G.neighbors(u)) {
+            if (distances[v] == INF) {
+                distances[v] = distances[u] + 1;
+                q.push(v);
+            }
+        }
+    }
+}
+
+int main(int argc, char* argv[]) {
+    // 初始化图
+    Graph G = Graph::readFromFile(argv[1]);
+
+    // 初始化距离向量
+    std::vector<int> distances(G.numVertices(), INF);
+
+    // 设置源节点
+    int source = 0; // 可以根据需要更改
+
+    // 运行BFS算法
+    BFS_SSSP(G, source, distances);
+
+    // 输出结果
+    for (int i = 0; i < distances.size(); ++i) {
+        if (distances[i] == INF) {
+            std::cout << "Node " << i << ": INF" << std::endl;
+        } else {
+            std::cout << "Node " << i << ": " << distances[i] << std::endl;
+        }
+    }
+
+    return 0;
+}

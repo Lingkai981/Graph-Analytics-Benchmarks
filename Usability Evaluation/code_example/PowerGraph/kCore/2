@@ -1,0 +1,89 @@
+
+
+#include <test.hpp>
+#include <graphlab.hpp>
+
+struct vertex_data {
+  size_t degree;
+  bool active;
+  vertex_data() : degree(0), active(true) {}
+  explicit vertex_data(size_t degree) : degree(degree), active(true) {}
+  void save(graphlab::oarchive& oarc) const {
+    oarc << degree << active;
+  }
+  void load(graphlab::iarchive& iarc) {
+    iarc >> degree >> active;
+  }
+};
+
+struct edge_data {
+  void save(graphlab::oarchive& oarc) const {}
+  void load(graphlab::iarchive& iarc) {}
+};
+
+typedef graphlab::distributed_graph<vertex_data, edge_data> graph_type;
+
+class kcore_program : public graphlab::ivertex_program<graph_type, size_t> {
+public:
+  size_t k;
+
+  kcore_program() : k(0) {}
+  explicit kcore_program(size_t k) : k(k) {}
+
+  edge_dir_type gather_edges(icontext_type& context, const vertex_type& vertex) const {
+    return graphlab::ALL_EDGES;
+  }
+
+  size_t gather(icontext_type& context, const vertex_type& vertex, edge_type& edge) const {
+    return edge.source().data().active && edge.target().data().active ? 1 : 0;
+  }
+
+  void apply(icontext_type& context, vertex_type& vertex, const gather_type& total) {
+    if (vertex.data().active && total < k) {
+      vertex.data().active = false;
+      context.signal(vertex);
+    }
+  }
+
+  edge_dir_type scatter_edges(icontext_type& context, const vertex_type& vertex) const {
+    return graphlab::ALL_EDGES;
+  }
+
+  void scatter(icontext_type& context, const vertex_type& vertex, edge_type& edge) const {
+    if (vertex.data().active && !edge.source().data().active) {
+      context.signal(edge.target());
+    }
+    if (vertex.data().active && !edge.target().data().active) {
+      context.signal(edge.source());
+    }
+  }
+};
+
+int main(int argc, char** argv) {
+  graphlab::mpi_tools::init(argc, argv);
+  graphlab::distributed_control dc;
+  graphlab::command_line_options clopts("k-Core algorithm.");
+  std::string graph_dir;
+  size_t k = 2;
+  clopts.attach_option("graph", graph_dir, "The graph file.");
+  clopts.attach_option("k", k, "The k value for the k-Core algorithm.");
+  if (!clopts.parse(argc, argv)) {
+    std::cout << "Error parsing arguments." << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  graph_type graph(dc, clopts);
+  graph.load_structure(graph_dir, "tsv");
+  graph.finalize();
+  std::cout << "#vertices: " << graph.num_vertices() << " #edges: " << graph.num_edges() << std::endl;
+
+  graphlab::async_consistent_engine<kcore_program> engine(dc, graph, clopts);
+  engine.signal_all();
+  engine.start();
+  std::cout << "Runtime: " << engine.elapsed_seconds() << std::endl;
+
+  graph.save("kcore_output", graphlab::vertex_writer<graph_type>(), false, true, false);
+
+  graphlab::mpi_tools::finalize();
+  return EXIT_SUCCESS;
+}

@@ -1,0 +1,110 @@
+#include "../core/api.h"
+
+// Function prototypes
+template<class VTYPE, class F, class M>
+inline VSet vertexMap(VSet &U, F &f, M &m, bool b = true);
+
+template<class VTYPE, class F, class M, class C, class H>
+VSet edgeMapDenseFunction(Graph<VTYPE> &G, VSet &U, H h, VSet &T, F &f, M &m, C &c, bool b = true);
+
+template<class VTYPE, class F, class M, class C, class R>
+VSet edgeMapSparseFunction(Graph<VTYPE> &G, VSet &U, int h, F &f, M &m, C &c, R &r);
+
+template<class VTYPE, class F, class M, class C, class R, class H>
+VSet edgeMapFunction(Graph<VTYPE> &G, VSet &U, H h, F &f, M &m, C &c, R &r);
+
+// Initialization function
+VSet INIT(VSet &v, int s) {
+    if (id(v) == s) {
+        v.d = 0;
+        v.c = 1;
+        v.b = 0;
+    } else {
+        v.d = -1;
+        v.c = 0;
+        v.b = 0;
+    }
+    return v;
+}
+
+// Filter function for vertex ID
+bool FILTER(VSet &v, int s) {
+    return id(v) == s;
+}
+
+// Update function 1
+void UPDATE1(VSet &s, VSet &d) {
+    d.c += s.c;
+}
+
+// Condition function
+bool COND(VSet &v) {
+    return v.d == -1;
+}
+
+// Reduce function 1
+void REDUCE1(VSet &s, VSet &d) {
+    d.c += s.c;
+}
+
+// Local update function
+void LOCAL(VSet &v, int curLevel) {
+    v.d = curLevel;
+}
+
+// Check function 2
+bool CHECK2(VSet &s, VSet &d) {
+    return d.d == s.d - 1;
+}
+
+// Update function 2
+void UPDATE2(VSet &s, VSet &d) {
+    d.b += (d.c / s.c) * (1 + s.b);
+}
+
+// Reduce function 2
+void REDUCE2(VSet &s, VSet &d) {
+    d.b += s.b;
+}
+
+// Betweenness Centrality (BN) function
+void BN(VSet &S, int h) {
+    int curLevel = h;
+    int sz = Size(S);
+
+    if (sz == 0) {
+        return;
+    } else {
+        printf("size = %d\n", sz);
+        VSet T = edgeMapFunction(graph, S, ED, UPDATE1, LOCAL, COND, REDUCE1);
+        T = vertexMap(T, LOCAL, h);
+        BN(T, h + 1);
+        printf("-size = %d\n", sz);
+        curLevel = h;
+        edgeMapFunction(graph, T, EjoinV(ER, S), CHECK2, UPDATE2, CTrueV, REDUCE2);
+    }
+}
+
+// Main function
+int main(int argc, char* argv[]) {
+    // Initialize vertex types
+    initializeVertexTypes();
+    
+    // Set dataset
+    SetDataset(argv[1], argv[2]);
+    int s = atoi(argv[3]);
+    
+    // Initialize vertices
+    VSet All; // Assumes All is initialized elsewhere
+    VSet S = vertexMap(All, CTrueV, INIT);
+    
+    // Filter vertices
+    S = vertexMap(S, FILTER, s);
+    
+    // Execute BN function
+    BN(S, 1);
+    
+    // Measure and print total processing time
+    printf("total time = %0.3lf secs\n", GetTime());   
+    return 0;
+}

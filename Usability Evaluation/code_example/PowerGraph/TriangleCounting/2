@@ -1,0 +1,83 @@
+#include <test.hpp>
+
+// Define the vertex data type
+struct vertex_data {
+  size_t num_triangles;
+  vertex_data() : num_triangles(0) {}
+  void save(graphlab::oarchive& oarc) const {
+    oarc << num_triangles;
+  }
+  void load(graphlab::iarchive& iarc) {
+    iarc >> num_triangles;
+  }
+};
+
+// Define the edge data type
+struct edge_data {
+  void save(graphlab::oarchive& oarc) const {}
+  void load(graphlab::iarchive& iarc) {}
+};
+
+// Define the graph type
+typedef graphlab::distributed_graph<vertex_data, edge_data> graph_type;
+
+// Gather type for counting common neighbors
+typedef graphlab::empty gather_type;
+
+// Vertex program for triangle counting
+class triangle_count_program : public graphlab::ivertex_program<graph_type, gather_type> {
+public:
+  edge_dir_type gather_edges(icontext_type& context, const vertex_type& vertex) const {
+    return graphlab::ALL_EDGES;
+  }
+
+  gather_type gather(icontext_type& context, const vertex_type& vertex, edge_type& edge) const {
+    return gather_type();
+  }
+
+  void apply(icontext_type& context, vertex_type& vertex, const gather_type& total) {
+    vertex.data().num_triangles = 0;
+  }
+
+  edge_dir_type scatter_edges(icontext_type& context, const vertex_type& vertex) const {
+    return graphlab::ALL_EDGES;
+  }
+
+  void scatter(icontext_type& context, const vertex_type& vertex, edge_type& edge) const {
+    vertex_id_type other_vertex = edge.target().id() == vertex.id() ? edge.source().id() : edge.target().id();
+    if (vertex.id() < other_vertex) {
+      context.signal(edge.target());
+    }
+  }
+};
+
+int main(int argc, char** argv) {
+  // Initialize MPI
+  graphlab::mpi_tools::init(argc, argv);
+  graphlab::distributed_control dc;
+
+  // Parse command line options
+  graphlab::command_line_options clopts("Triangle Counting Algorithm");
+  std::string graph_dir;
+  clopts.attach_option("graph", &graph_dir, graph_dir, "The graph file");
+  if (!clopts.parse(argc, argv)) {
+    std::cout << "Error parsing arguments." << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  // Load the graph
+  graph_type graph(dc, clopts);
+  graph.load_structure(graph_dir, "tsv");
+  graph.finalize();
+  std::cout << "#vertices: " << graph.num_vertices() << " #edges: " << graph.num_edges() << std::endl;
+
+  // Create and run the engine
+  graphlab::async_consistent_engine<triangle_count_program> engine(dc, graph, clopts);
+  engine.signal_all();
+  engine.start();
+  std::cout << "Runtime: " << engine.elapsed_seconds() << std::endl;
+
+  // Finalize MPI
+  graphlab::mpi_tools::finalize();
+  return EXIT_SUCCESS;
+}

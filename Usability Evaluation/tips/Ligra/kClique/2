@@ -1,0 +1,85 @@
+
+Here is a summary of the core API functions found in the provided code from the project "test.h"
+1. edgeMapDense:
+Parameters:
+GA: The graph.
+vertexSubset: The subset of vertices to process.
+f: The function to apply to each edge.
+fl: The flags for the operation.
+
+2. edgeMapDenseForward:
+Parameters:
+GA: The graph.
+vertexSubset: The subset of vertices to process.
+f: The function to apply to each edge.
+fl: The flags for the operation.
+
+3. edgeMapSparse:
+Parameters:
+GA: The graph.
+frontierVertices: The vertices at the frontier.
+indices: Indices of the vertices.
+degrees: Degrees of the vertices.
+m: Number of vertices.
+f: The function to apply to each edge.
+fl: The flags for the operation.
+
+4. edgeMapSparse_no_filter:
+Parameters:
+GA: The graph.
+frontierVertices: The vertices at the frontier.
+indices: Indices of the vertices.
+offsets: Offsets for the edges.
+m: Number of vertices.
+f: The function to apply to each edge.
+fl: The flags for the operation.
+
+5. edgeMapData:
+Parameters:
+GA: The graph.
+vs: The vertex subset.
+f: The function to apply to each edge.
+threshold: Threshold for deciding between sparse and dense processing.
+fl: The flags for the operation.
+
+6. edgeMap:
+Parameters:
+GA: The graph.
+vs: The vertex subset.
+f: The function to apply to each edge.
+threshold: Threshold for deciding between sparse and dense processing.
+fl: The flags for the operation.
+
+7. packEdges:
+Parameters:
+GA: The graph.
+vs: The vertex subset.
+p: The predicate function to filter edges.
+fl: The flags for the operation.
+
+8. edgeMapFilter:
+Parameters:
+GA: The graph.
+vs: The vertex subset.
+p: The predicate function to filter edges.
+fl: The flags for the operation.
+
+9. vertexMap (two versions):
+Parameters:
+V: The vertex subset.
+f: The function to apply to each vertex.
+
+10. vertexFilter:
+Parameters:
+V: The vertex subset.
+filter: The filtering function.
+
+11. vertexFilter2 (two versions):
+Parameters:
+V: The vertex subset or vertexSubsetData.
+filter: The filtering function.
+
+12. Compute (two versions):
+Parameters:
+graph: The graph.
+commandLine: The command line parameters.

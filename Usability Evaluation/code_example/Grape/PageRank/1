@@ -1,0 +1,73 @@
+
+#include <test/test.h>
+#include <vector>
+#include <unordered_map>
+#include <cmath>
+#include <iostream>
+
+using namespace std;
+
+class PageRank {
+public:
+    PageRank(const vector<vector<int>>& links, int numPages, double dampingFactor = 0.85, int maxIterations = 100, double tolerance = 1e-6)
+        : links(links), numPages(numPages), dampingFactor(dampingFactor), maxIterations(maxIterations), tolerance(tolerance) {
+        initialize();
+    }
+
+    void calculate() {
+        for (int iter = 0; iter < maxIterations; ++iter) {
+            vector<double> newRanks(numPages, (1.0 - dampingFactor) / numPages);
+            for (int page = 0; page < numPages; ++page) {
+                for (int link : links[page]) {
+                    newRanks[link] += dampingFactor * ranks[page] / links[page].size();
+                }
+            }
+
+            double diff = 0.0;
+            for (int i = 0; i < numPages; ++i) {
+                diff += fabs(newRanks[i] - ranks[i]);
+            }
+
+            ranks = newRanks;
+
+            if (diff < tolerance) {
+                break;
+            }
+        }
+    }
+
+    void printRanks() const {
+        for (int i = 0; i < numPages; ++i) {
+            cout << "Page " << i << " Rank: " << ranks[i] << endl;
+        }
+    }
+
+private:
+    void initialize() {
+        ranks.resize(numPages, 1.0 / numPages);
+    }
+
+    vector<vector<int>> links;
+    int numPages;
+    double dampingFactor;
+    int maxIterations;
+    double tolerance;
+    vector<double> ranks;
+};
+
+int main() {
+    // Example usage:
+    vector<vector<int>> links = {
+        {1, 2}, // Page 0 links to Page 1 and Page 2
+        {2},    // Page 1 links to Page 2
+        {0},    // Page 2 links to Page 0
+    };
+
+    int numPages = 3;
+
+    PageRank pagerank(links, numPages);
+    pagerank.calculate();
+    pagerank.printRanks();
+
+    return 0;
+}

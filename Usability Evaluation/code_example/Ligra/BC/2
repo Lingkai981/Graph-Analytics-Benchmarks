@@ -1,0 +1,97 @@
+#include "test.h"
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <stack>
+#include <tuple>
+#include <algorithm>
+
+using namespace std;
+
+// Betweenness Centrality algorithm using Ligra framework
+
+// Structure to store the results of the BC computation
+struct BCResult {
+    vector<double> centrality;
+    BCResult(size_t n) : centrality(n, 0.0) {}
+};
+
+// Function to compute the shortest paths from a single source
+template <class vertex>
+void singleSourceShortestPath(graph<vertex>& GA, int source, vector<int>& distances, vector<vector<int>>& predecessors) {
+    size_t n = GA.n;
+    distances.assign(n, -1);
+    predecessors.assign(n, vector<int>());
+
+    queue<int> Q;
+    Q.push(source);
+    distances[source] = 0;
+
+    while (!Q.empty()) {
+        int u = Q.front();
+        Q.pop();
+        vertex v = GA.V[u];
+
+        for (int i = 0; i < v.getOutDegree(); ++i) {
+            int neighbor = v.getOutNeighbor(i);
+            if (distances[neighbor] < 0) {
+                Q.push(neighbor);
+                distances[neighbor] = distances[u] + 1;
+            }
+            if (distances[neighbor] == distances[u] + 1) {
+                predecessors[neighbor].push_back(u);
+            }
+        }
+    }
+}
+
+// Function to compute Betweenness Centrality
+template <class vertex>
+BCResult computeBetweennessCentrality(graph<vertex>& GA) {
+    size_t n = GA.n;
+    BCResult result(n);
+
+    for (int s = 0; s < n; ++s) {
+        vector<int> distances;
+        vector<vector<int>> predecessors;
+        singleSourceShortestPath(GA, s, distances, predecessors);
+
+        vector<double> dependency(n, 0.0);
+        stack<int> S;
+
+        for (int i = 0; i < n; ++i) {
+            if (distances[i] >= 0) {
+                S.push(i);
+            }
+        }
+
+        while (!S.empty()) {
+            int w = S.top();
+            S.pop();
+            for (int v : predecessors[w]) {
+                double ratio = (1.0 + dependency[w]) / predecessors[w].size();
+                dependency[v] += ratio;
+            }
+            if (w != s) {
+                result.centrality[w] += dependency[w];
+            }
+        }
+    }
+
+    return result;
+}
+
+int main(int argc, char* argv[]) {
+    // Assuming graph is loaded into GA
+    graph<vertex> GA;
+
+    // Compute Betweenness Centrality
+    BCResult result = computeBetweennessCentrality(GA);
+
+    // Output the Betweenness Centrality values
+    for (size_t i = 0; i < result.centrality.size(); ++i) {
+        cout << "Vertex " << i << ": " << result.centrality[i] << endl;
+    }
+
+    return 0;
+}

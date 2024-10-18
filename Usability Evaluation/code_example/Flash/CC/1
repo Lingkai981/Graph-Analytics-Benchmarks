@@ -1,0 +1,81 @@
+#include "../core/api.h"
+
+// This function initializes the parent array where each vertex is its own parent initially
+void initializeParentArray(int* parent, int n) {
+    for (int i = 0; i < n; ++i) {
+        parent[i] = i;
+    }
+}
+
+// This function implements the SIZE superstep that initializes the component IDs
+void SIZE(vertexSubset &vset, int* parent) {
+    int n = vset.size();
+    for (int i = 0; i < n; ++i) {
+        int vertex = vset[i];
+        parent[vertex] = vertex;
+    }
+}
+
+// This function implements the VERTEXMAP superstep that inspects each vertex
+void VERTEXMAP(vertexSubset &vset, int* parent, graph &G) {
+    vset.mapVertices([parent, &G](int vertex) {
+        int smallestNeighbour = parent[vertex];
+        for (auto neighbor : G.adj(vertex)) {
+            if (parent[neighbor] < smallestNeighbour) {
+                smallestNeighbour = parent[neighbor];
+            }
+        }
+        parent[vertex] = smallestNeighbour;
+    });
+}
+
+// This function implements the EDGEMAP superstep that propagates the smallest component ID
+void EDGEMAP(vertexSubset &vset, int* parent, graph &G) {
+    vset.mapVerticesEdges([parent, &G](int vertex, int neighbor) {
+        int smallestNeighbour = std::min(parent[vertex], parent[neighbor]);
+        parent[vertex] = smallestNeighbour;
+        parent[neighbor] = smallestNeighbour;
+    });
+}
+
+// Main Connected Components function using the Flash API
+void connectedComponents(graph &G, vertexSubset &activeVertices) {
+    int n = G.numVertices();
+    int* parent = new int[n];
+    initializeParentArray(parent, n);
+
+    SIZE(activeVertices, parent);
+    bool changed = true;
+    while (changed) {
+        int* oldParent = new int[n];
+        for (int i = 0; i < n; ++i) {
+            oldParent[i] = parent[i];
+        }
+
+        VERTEXMAP(activeVertices, parent, G);
+        EDGEMAP(activeVertices, parent, G);
+
+        changed = false;
+        for (int i = 0; i < n; ++i) {
+            if (oldParent[i] != parent[i]) {
+                changed = true;
+                break;
+            }
+        }
+
+        delete[] oldParent;
+    }
+
+    // Cleaning up
+    delete[] parent;
+}
+
+int main(int argc, char* argv[]) {
+    // Assuming graph `G` is appropriately initialized and `activeVertices` represents all vertices of G
+    graph G;
+    vertexSubset activeVertices = G.allVertices();
+
+    connectedComponents(G, activeVertices);
+
+    return 0;
+}

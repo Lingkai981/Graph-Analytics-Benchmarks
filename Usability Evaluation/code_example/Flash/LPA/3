@@ -1,0 +1,45 @@
+#include "../core/api.h"
+
+DefineFV(filter) { return v.cc != v.c; };
+DefineMapV(init) {
+    v.c = id(v);
+    v.cc = -1;
+    v.s.clear();
+    return v;
+};
+DefineMapV(local1) {
+    int max_cnt = 0;
+    for (auto& i : v.s) {
+        cnt[i]++;
+        if (cnt[i] > max_cnt) {
+            max_cnt = cnt[i];
+            v.cc = i;
+        }
+    }
+    v.s.clear();
+    return v;
+};
+DefineMapV(local2) { v.c = v.cc; return v; };
+DefineMapE(update) { d.s.push_back(s.c); };
+
+int main(int argc, char* argv[]) {
+    // Initialization
+    MPI_Init(&argc, &argv);
+    Graph<int> G;
+    G.LoadGraph(argv[1]);
+    vertexSubset All = G.GetAllVertices();
+
+    // Label Propagation Algorithm
+    vertexSubset A = vertexMap(All, CTrueV, init);
+
+    for (int i = 0; i < MAX_ITER; i++) {
+        A = edgeMapDense(All, G, CTrueE, A, update, CTrueV);
+        A = vertexMap(All, CTrueV, local1);
+        A = vertexMap(All, filter, local2);
+    }
+
+    // Finalization
+    G.SaveLabels("output.txt");
+    MPI_Finalize();
+    return 0;
+}

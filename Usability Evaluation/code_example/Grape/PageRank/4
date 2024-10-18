@@ -1,0 +1,140 @@
+#include <test/test.h>
+
+namespace test {
+
+template <typename FRAG_T>
+class PageRankContext : public VertexDataContext<FRAG_T> {
+public:
+    explicit PageRankContext(const FRAG_T& fragment)
+        : VertexDataContext<FRAG_T>(fragment),
+          result(fragment.Vertices()),
+          degree(fragment.InnerVertices()),
+          next_result(fragment.Vertices()),
+          avg_degree(0.0),
+          step(0),
+          delta(0.85),
+          max_round(10),
+          dangling_sum(0.0) {
+        auto& frag = this->fragment();
+        avg_degree = static_cast<double>(frag.GetEdgeNum()) / frag.GetInnerVerticesNum();
+        send_buffers.resize(frag.fnum());
+        recv_buffers.resize(frag.fnum());
+    }
+
+    void Init(BatchShuffleMessageManager& messages, double delta, int max_round) {
+        this->delta = delta;
+        this->max_round = max_round;
+        for (int i = 0; i < this->fragment().fnum(); ++i) {
+            messages.SetupBuffer(i, send_buffers[i], recv_buffers[i]);
+        }
+        step = 0;
+    }
+
+    void Output(std::ostream& os) override {
+        auto& frag = this->fragment();
+        for (auto v : frag.InnerVertices()) {
+            os << frag.GetId(v) << " " << result[v] << std::endl;
+        }
+    }
+
+    std::vector<double> result;
+    std::vector<int> degree;
+    std::vector<double> next_result;
+    double avg_degree;
+    int step;
+    double delta;
+    int max_round;
+    double dangling_sum;
+    std::vector<Buffer> send_buffers;
+    std::vector<Buffer> recv_buffers;
+};
+
+template <typename FRAG_T>
+class PageRank : public BatchShuffleAppBase<FRAG_T, PageRankContext<FRAG_T>>, public ParallelEngine, public Communicator {
+public:
+    void PEval(const fragment_t& frag, context_t& ctx, message_manager_t& messages) {
+        if (ctx.max_round <= 0) return;
+
+        auto inner_vertices = frag.InnerVertices();
+        ctx.step = 0;
+        ctx.graph_vnum = frag.GetTotalVerticesNum();
+        int dangling_vnum = 0;
+        double p = 1.0 / ctx.graph_vnum;
+        std::vector<int> dangling_vnum_tid(thread_num());
+        
+        for (auto v : inner_vertices) {
+            int edge_num = frag.GetLocalOutDegree(v);
+            ctx.degree[v] = edge_num;
+            if (edge_num > 0) {
+                ctx.result[v] = p / edge_num;
+            } else {
+                dangling_vnum_tid[thread_id()] += 1;
+                ctx.result[v] = p;
+            }
+        }
+
+        dangling_vnum = std::accumulate(dangling_vnum_tid.begin(), dangling_vnum_tid.end(), 0);
+        ctx.total_dangling_vnum = AllReduceSum(dangling_vnum);
+        ctx.dangling_sum = p * ctx.total_dangling_vnum;
+        messages.SyncInnerVertices(frag, ctx.result, thread_num());
+    }
+
+    void IncEval(const fragment_t& frag, context_t& ctx, message_manager_t& messages) {
+        auto inner_vertices = frag.InnerVertices();
+        ctx.step += 1;
+        double base = (1.0 - ctx.delta) / ctx.graph_vnum + ctx.delta * ctx.dangling_sum / ctx.graph_vnum;
+        ctx.dangling_sum = base * ctx.total_dangling_vnum;
+        messages.UpdateOuterVertices();
+
+        for (auto v : inner_vertices) {
+            double cur = 0.0;
+            auto edges = frag.GetOutgoingAdjList(v);
+            for (auto& e : edges) {
+                cur += ctx.result[e.neighbor];
+            }
+            int edge_num = frag.GetLocalOutDegree(v);
+            ctx.next_result[v] = edge_num > 0 ? (ctx.delta * cur + base) / edge_num : base;
+        }
+
+        std::swap(ctx.result, ctx.next_result);
+        if (ctx.step != ctx.max_round) {
+            messages.SyncInnerVertices(frag, ctx.result, thread_num());
+        } else {
+            for (auto v : inner_vertices) {
+                if (ctx.degree[v] != 0) {
+                    ctx.result[v] *= ctx.degree[v];
+                }
+            }
+        }
+    }
+};
+
+}  // namespace test
+
+int main(int argc, char** argv) {
+    // Initialize fragment, message manager, and context
+    FRAG_T fragment;
+    BatchShuffleMessageManager message_manager;
+    test::PageRankContext<FRAG_T> ctx(fragment);
+    double delta = 0.85;
+    int max_round = 10;
+
+    ctx.Init(message_manager, delta, max_round);
+
+    // Initialize PageRank algorithm
+    test::PageRank<FRAG_T> pagerank;
+
+    // Perform initial evaluation
+    pagerank.PEval(fragment, ctx, message_manager);
+
+    // Perform incremental evaluations
+    for (int i = 0; i < max_round; ++i) {
+        pagerank.IncEval(fragment, ctx, message_manager);
+    }
+
+    // Output the results
+    std::ostream& os = std::cout;
+    ctx.Output(os);
+
+    return 0;
+}

@@ -1,0 +1,63 @@
+#include <test/test.h>
+
+namespace grape {
+
+template <typename FRAG_T>
+class ConnectedComponentContext : public VertexDataContext<FRAG_T, typename FRAG_T::vid_t> {
+ public:
+  using fragment_t = FRAG_T;
+  using vid_t = typename FRAG_T::vid_t;
+  using vertex_t = typename FRAG_T::vertex_t;
+
+  explicit ConnectedComponentContext(const fragment_t& fragment)
+      : VertexDataContext<FRAG_T, vid_t>(fragment) {}
+
+  void Init(FRAG_T& frag, parallel_engine_t& engine, message_manager_t& messages) override {
+    auto inner_vertices = frag.InnerVertices();
+    for (auto v : inner_vertices) {
+      this->data_[v] = frag.GetInnerVertexId(v);
+    }
+  }
+
+  void Finalize() override {}
+};
+
+template <typename FRAG_T>
+class ConnectedComponent : public ParallelAppBase<ConnectedComponent<FRAG_T>> {
+ public:
+  INSTALL_PARALLEL_WORKER(ConnectedComponent<FRAG_T>, ConnectedComponentContext<FRAG_T>, FRAG_T)
+  
+  void PEval(const fragment_t& frag, context_t& ctx, message_manager_t& messages) override {
+    auto inner_vertices = frag.InnerVertices();
+    for (auto v : inner_vertices) {
+      auto v_data = ctx.data_[v];
+      auto oes = frag.GetOutgoingAdjList(v);
+      for (auto& e : oes) {
+        auto u = e.get_neighbor();
+        if (ctx.data_[u] > v_data) {
+          ctx.data_[u] = v_data;
+          messages.SendMsgThroughOEdges(frag, u, v_data);
+        }
+      }
+    }
+  }
+
+  void IncEval(const fragment_t& frag, context_t& ctx, message_manager_t& messages) override {
+    auto inner_vertices = frag.InnerVertices();
+    typename FRAG_T::vid_t msg;
+    while (messages.GetMessage<FRAG_T::vid_t>(msg)) {
+      auto u = frag.GetVertex(msg.v);
+      auto v_data = msg.data;
+      auto oes = frag.GetOutgoingAdjList(u);
+      for (auto& e : oes) {
+        auto v = e.get_neighbor();
+        if (ctx.data_[v] > v_data) {
+          ctx.data_[v] = v_data;
+          messages.SendMsgThroughOEdges(frag, v, v_data);
+        }
+      }
+    }
+  }
+};
+
+}

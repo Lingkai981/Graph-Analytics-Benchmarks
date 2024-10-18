@@ -1,0 +1,62 @@
+
+#include "basic/test-dev.h"
+#include "test_app_xxx.h"
+
+struct PRValue {
+    double rank;
+    double delta;
+    int degree;
+};
+
+struct PRVertex : public Vertex<int, PRValue, double> {
+    void compute(MessageContainer &messages) {
+        if (step_num() == 1) {
+            value().rank = 1.0;
+            value().delta = 1.0 / value().degree;
+            for (int i = 0; i < edges().size(); i++) {
+                send_message(edges()[i].target, value().delta);
+            }
+        } else {
+            double sum = 0;
+            for (int i = 0; i < messages.size(); i++) {
+                sum += messages[i];
+            }
+            value().rank = 0.15 + 0.85 * sum;
+            value().delta = value().rank / value().degree;
+            if (step_num() < 30) {
+                for (int i = 0; i < edges().size(); i++) {
+                    send_message(edges()[i].target, value().delta);
+                }
+            } else {
+                vote_to_halt();
+            }
+        }
+    }
+};
+
+class PRWorker : public Worker<PRVertex> {
+public:
+    PRWorker() : Worker<PRVertex>() {}
+
+    virtual ~PRWorker() {}
+};
+
+class PRCombiner : public Combiner<double> {
+public:
+    virtual void combine(double &old, const double &new_msg) {
+        old += new_msg;
+    }
+};
+
+void test_pagerank(const string &in_path, const string &out_path, bool use_combiner) {
+    WorkerParams param;
+    param.input_path = in_path;
+    param.output_path = out_path;
+
+    PRWorker worker;
+    if (use_combiner) {
+        PRCombiner combiner;
+        worker.setCombiner(&combiner);
+    }
+    worker.run(param);
+}

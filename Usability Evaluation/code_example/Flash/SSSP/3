@@ -1,0 +1,52 @@
+#include "../core/api.h"
+
+DefineMapV(init_v) {
+    v.dis = (id == source) ? 0 : -1;
+};
+
+DefineFE(check) {
+    return (d.dis < -0.5 || d.dis > s.dis + weight);
+};
+
+DefineMapE(update) {
+    if (d.dis < -0.5 || d.dis > s.dis + weight)
+        d.dis = s.dis + weight;
+};
+
+DefineMapE(reduce) {
+    if (d.dis < -0.5 || d.dis > s.dis)
+        d.dis = s.dis;
+};
+
+void SingleSourceShortestPath(Graph<vertex_t> &G, int source) {
+    vset_t a = All;
+    a = VertexMap(a, CTrueV, init_v);
+
+    for (int len = VSize(a), i = 1; len > 0; len = VSize(a), ++i) {
+        LOG(INFO) << "Round " << i << ": size=" << len << std::endl;
+        a = EdgeMap(G, a, ED, check, update, CTrueV, reduce);
+    }
+}
+
+int main(int argc, char *argv[]) {
+    int source;
+    // Initialize MPI and parse the source vertex from input arguments
+    MPI_Init(&argc, &argv);
+    if (argc < 2) {
+        cerr << "Usage: " << argv[0] << " <source_vertex>" << endl;
+        MPI_Finalize();
+        return -1;
+    }
+    source = atoi(argv[1]);
+    
+    // Initialize graph
+    Graph<vertex_t> G;
+    // Load graph data here. This part depends on your specific graph data source.
+    
+    // Run the Single-Source Shortest Path algorithm
+    SingleSourceShortestPath(G, source);
+    
+    // Finalize MPI
+    MPI_Finalize();
+    return 0;
+}

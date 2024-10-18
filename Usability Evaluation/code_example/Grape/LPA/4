@@ -1,0 +1,122 @@
+#include <test/test.h>
+
+template <typename FRAG_T, typename DATA_T>
+class VertexDataContext {
+public:
+    void Init(FRAG_T& frag, parallel_engine_t& engine, message_manager_t& messages) {
+        labels.Init(frag.InnerVertices());
+        changed.Init(frag.InnerVertices());
+        step = 0;
+        max_round = 10; // You can set this according to your requirement
+    }
+
+    void Finalize() {
+        // Clean up resources if needed
+    }
+
+    VertexArray<vertex_t, DATA_T> labels;
+    VertexArray<vertex_t, bool> changed;
+    int step;
+    int max_round;
+};
+
+template <typename FRAG_T>
+class LabelPropagationApp : public ParallelAppBase<LabelPropagationApp<FRAG_T>> {
+public:
+    using fragment_t = FRAG_T;
+    using context_t = VertexDataContext<FRAG_T, typename FRAG_T::vertex_t>;
+    using message_manager_t = ParallelMessageManager;
+
+    void PEval(const fragment_t& frag, context_t& ctx, message_manager_t& messages) {
+        messages.InitChannels(thread_num());
+        ctx.step += 1;
+        if (ctx.step > ctx.max_round) {
+            return;
+        } else {
+            messages.ForceContinue();
+            InitLabels(frag, ctx);
+            PropagateLabel(frag, ctx, messages);
+        }
+    }
+
+    void IncEval(const fragment_t& frag, context_t& ctx, message_manager_t& messages) {
+        ctx.step += 1;
+        messages.ParallelProcess<fragment_t, typename fragment_t::vertex_t>(thread_num(), frag, [&ctx](int tid, vertex_t u, const vertex_t& msg) {
+            ctx.labels[u] = msg;
+        });
+        if (ctx.step > ctx.max_round) {
+            return;
+        } else {
+            messages.ForceContinue();
+            PropagateLabel(frag, ctx, messages);
+        }
+    }
+
+private:
+    void InitLabels(const fragment_t& frag, context_t& ctx) {
+        ForEach(frag.InnerVertices(), [&frag, &ctx](int tid, vertex_t v) {
+            ctx.labels[v] = frag.GetInnerVertexId(v);
+        });
+        ForEach(frag.OuterVertices(), [&frag, &ctx](int tid, vertex_t v) {
+            ctx.labels[v] = frag.GetOuterVertexId(v);
+        });
+    }
+
+    void PropagateLabel(const fragment_t& frag, context_t& ctx, message_manager_t& messages) {
+        VertexArray<vertex_t, typename fragment_t::vertex_t> new_labels(frag.InnerVertices());
+        ForEach(frag.InnerVertices(), [&frag, &ctx, &new_labels, &messages](int tid, vertex_t v) {
+            if (frag.GetOutgoingAdjList(v).empty()) {
+                ctx.changed[v] = false;
+            } else {
+                auto new_label = UpdateLabelFast(frag.GetOutgoingAdjList(v), ctx.labels);
+                if (ctx.labels[v] != new_label) {
+                    new_labels[v] = new_label;
+                    ctx.changed[v] = true;
+                    messages.SendMsgThroughOEdges<fragment_t, typename fragment_t::vertex_t>(frag, v, new_label, tid);
+                } else {
+                    ctx.changed[v] = false;
+                }
+            }
+        });
+        ForEach(frag.InnerVertices(), [&ctx, &new_labels](int tid, vertex_t v) {
+            if (ctx.changed[v]) {
+                ctx.labels[v] = new_labels[v];
+            }
+        });
+    }
+
+    typename fragment_t::vertex_t UpdateLabelFast(const adj_list_t& adj_list, const VertexArray<vertex_t, typename fragment_t::vertex_t>& labels) {
+        // Implement the logic to update the label based on the adjacent vertices
+        // This is a placeholder function and needs to be implemented based on your requirement
+        return labels[adj_list.begin()->neighbor];
+    }
+};
+
+int main() {
+    // Assuming fragment, engine, and messages are initialized properly
+    fragment_t fragment;
+    parallel_engine_t engine;
+    ParallelMessageManager messages;
+
+    LabelPropagationApp<fragment_t> app;
+    VertexDataContext<fragment_t, typename fragment_t::vertex_t> context;
+
+    context.Init(fragment, engine, messages);
+
+    for (int round = 0; round < context.max_round; ++round) {
+        if (round == 0) {
+            app.PEval(fragment, context, messages);
+        } else {
+            app.IncEval(fragment, context, messages);
+        }
+    }
+
+    // Output the results
+    ForEach(fragment.InnerVertices(), [&context](int tid, vertex_t v) {
+        std::cout << "Vertex: " << v << " Label: " << context.labels[v] << std::endl;
+    });
+
+    context.Finalize();
+    return 0;
+}
+

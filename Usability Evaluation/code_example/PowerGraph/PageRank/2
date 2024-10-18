@@ -1,0 +1,70 @@
+
+#include <graphlab.hpp>
+
+struct vertex_data {
+  float pagerank;
+  vertex_data() : pagerank(1.0) {}
+};
+
+struct edge_data {
+  float weight;
+  edge_data() : weight(1.0) {}
+};
+
+typedef graphlab::distributed_graph<vertex_data, edge_data> graph_type;
+typedef float gather_type;
+
+class pagerank_vprog : public graphlab::ivertex_program<graph_type, gather_type> {
+public:
+  float last_pagerank;
+
+  edge_dir_type gather_edges(icontext_type& context, const vertex_type& vertex) const {
+    return graphlab::IN_EDGES;
+  }
+
+  gather_type gather(icontext_type& context, const vertex_type& vertex, edge_type& edge) const {
+    return edge.source().data().pagerank / edge.source().num_out_edges();
+  }
+
+  void apply(icontext_type& context, vertex_type& vertex, const gather_type& total) {
+    const float damping = 0.85;
+    const float new_pagerank = (1.0 - damping) + damping * total;
+    last_pagerank = vertex.data().pagerank;
+    vertex.data().pagerank = new_pagerank;
+  }
+
+  edge_dir_type scatter_edges(icontext_type& context, const vertex_type& vertex) const {
+    return graphlab::OUT_EDGES;
+  }
+
+  void scatter(icontext_type& context, const vertex_type& vertex, edge_type& edge) const {
+    if (std::fabs(vertex.data().pagerank - last_pagerank) > 1e-5) {
+      context.signal(edge.target());
+    }
+  }
+};
+
+int main(int argc, char** argv) {
+  graphlab::mpi_tools::init(argc, argv);
+  graphlab::distributed_control dc;
+  graphlab::command_line_options clopts("PageRank algorithm.");
+  std::string graph_dir;
+  clopts.attach_option("graph", &graph_dir, graph_dir, "The graph file.");
+  if (!clopts.parse(argc, argv)) {
+    std::cout << "Error parsing arguments." << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  graph_type graph(dc, clopts);
+  graph.load_structure(graph_dir, "tsv");
+  graph.finalize();
+  std::cout << "#vertices: " << graph.num_vertices() << " #edges: " << graph.num_edges() << std::endl;
+
+  graphlab::async_consistent_engine<pagerank_vprog> engine(dc, graph, clopts);
+  engine.signal_all();
+  engine.start();
+  std::cout << "Runtime: " << engine.elapsed_seconds() << std::endl;
+
+  graphlab::mpi_tools::finalize();
+  return EXIT_SUCCESS;
+}

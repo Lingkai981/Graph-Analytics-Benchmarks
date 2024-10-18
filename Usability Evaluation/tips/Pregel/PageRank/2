@@ -1,0 +1,143 @@
+Core API Functions
+Worker::setCombiner
+Description: Sets a combiner for the worker.
+
+Prototype:
+
+void setCombiner(Combiner<MessageT>* cb);
+Parameters:
+
+cb: A pointer to the combiner object.
+Example Usage:
+
+Combiner<MyMessage>* combiner = new MyCombiner();
+worker.setCombiner(combiner);
+Worker::setAggregator
+Description: Sets an aggregator for the worker.
+
+Prototype:
+
+void setAggregator(AggregatorT* ag);
+Parameters:
+
+ag: A pointer to the aggregator object.
+Example Usage:
+
+Aggregator<MyAggregator>* aggregator = new MyAggregator();
+worker.setAggregator(aggregator);
+Worker::add_vertex
+Description: Adds a vertex to the worker.
+
+Prototype:
+
+inline void add_vertex(VertexT* vertex);
+Parameters:
+
+vertex: A pointer to the vertex object.
+Example Usage:
+
+Vertex<MyKey, MyValue, MyMessage>* vertex = new MyVertex();
+worker.add_vertex(vertex);
+Worker::sync_graph
+Description: Synchronizes the graph across different workers by exchanging vertices.
+
+Prototype:
+
+void sync_graph();
+Parameters: None
+
+Example Usage:
+
+worker.sync_graph();
+Worker::active_compute
+Description: Performs computation only on active vertices.
+
+Prototype:
+
+void active_compute();
+Parameters: None
+
+Example Usage:
+
+worker.active_compute();
+Worker::all_compute
+Description: Performs computation on all vertices.
+
+Prototype:
+
+void all_compute();
+Parameters: None
+
+Example Usage:
+
+worker.all_compute();
+Worker::agg_sync
+Description: Synchronizes the aggregator across different workers.
+
+Prototype:
+
+void agg_sync();
+Parameters: None
+
+Example Usage:
+
+worker.agg_sync();
+Worker::load_graph
+Description: Loads the graph from the specified path.
+
+Prototype:
+
+void load_graph(const char* inpath);
+Parameters:
+
+inpath: The input path from which to load the graph.
+Example Usage:
+
+worker.load_graph("/path/to/input");
+Worker::dump_partition
+Description: Dumps the partitioned graph to the specified path.
+
+Prototype:
+
+void dump_partition(const char* outpath);
+Parameters:
+
+outpath: The output path to which the graph is dumped.
+Example Usage:
+
+worker.dump_partition("/path/to/output");
+Worker::run
+Description: Runs the worker with the given parameters.
+
+Prototype:
+
+void run(const WorkerParams& params);
+void run(const WorkerParams& params, int num_phases);
+void run(const MultiInputParams& params);
+Parameters:
+
+params: Parameters for running the worker.
+num_phases (optional): Number of phases to run.
+Example Usage:
+
+WorkerParams params;
+params.input_path = "/path/to/input";
+params.output_path = "/path/to/output";
+worker.run(params);
+Worker::run_report
+Description: Runs the worker and reports message counts to the specified path.
+
+Prototype:
+
+void run_report(const WorkerParams& params, const string reportPath);
+Parameters:
+
+params: Parameters for running the worker.
+reportPath: The path to output the report.
+Example Usage:
+
+WorkerParams params;
+params.input_path = "/path/to/input";
+params.output_path = "/path/to/output";
+string reportPath = "/path/to/report";
+worker.run_report(params, reportPath);

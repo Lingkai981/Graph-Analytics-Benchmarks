@@ -1,0 +1,100 @@
+#include <test/test.h>
+
+template <typename FRAG_T>
+class TriangleCountContext : public VertexDataContext<FRAG_T, int> {
+ public:
+  using fragment_t = FRAG_T;
+  using vertex_t = typename fragment_t::vertex_t;
+  using data_t = int;
+
+  void Init(FRAG_T& frag, parallel_engine_t& engine, message_manager_t& messages) override {
+    VertexDataContext<FRAG_T, data_t>::Init(frag, engine, messages);
+    global_degree.Init(frag.Vertices().size());
+    triangle_count.Init(frag.Vertices().size());
+  }
+
+  void Finalize() override {
+    VertexDataContext<FRAG_T, data_t>::Finalize();
+  }
+
+  VertexArray<int> global_degree;
+  VertexArray<int> triangle_count;
+};
+
+template <typename FRAG_T>
+class TriangleCount : public ParallelAppBase<TriangleCount<FRAG_T>> {
+ public:
+  using fragment_t = FRAG_T;
+  using vertex_t = typename fragment_t::vertex_t;
+  using context_t = TriangleCountContext<FRAG_T>;
+
+  void PEval(const fragment_t& frag, context_t& ctx, message_manager_t& messages) override {
+    auto inner_vertices = frag.InnerVertices();
+
+    for (auto v : inner_vertices) {
+      ctx.global_degree[v] = frag.GetLocalOutDegree(v);
+    }
+
+    messages.InitChannels(thread_num());
+    messages.Start();
+
+    for (auto v : inner_vertices) {
+      messages.SendMsgThroughOEdges<fragment_t, int>(frag, v, ctx.global_degree[v], 0);
+    }
+
+    messages.ForceContinue();
+    messages.Stop();
+  }
+
+  void IncEval(const fragment_t& frag, context_t& ctx, message_manager_t& messages) override {
+    messages.ParallelProcess<fragment_t, int>(
+        thread_num(), frag,
+        [&ctx](int tid, vertex_t u, int msg) {
+          ctx.global_degree[u] = msg;
+        });
+
+    auto inner_vertices = frag.InnerVertices();
+
+    for (auto v : inner_vertices) {
+      int local_triangle_count = 0;
+      auto oes = frag.GetOutgoingAdjList(v);
+
+      for (auto& e : oes) {
+        auto u = e.neighbor;
+        if (frag.IsInnerVertex(u)) {
+          auto oes_u = frag.GetOutgoingAdjList(u);
+          for (auto& e_u : oes_u) {
+            if (frag.IsInnerVertex(e_u.neighbor) && e_u.neighbor != v) {
+              if (frag.HasEdge(e_u.neighbor, v)) {
+                local_triangle_count++;
+              }
+            }
+          }
+        }
+      }
+
+      ctx.triangle_count[v] = local_triangle_count / 2;  // Each triangle is counted twice
+    }
+  }
+};
+
+int main(int argc, char** argv) {
+  grape::InitMPIComm();
+  {
+    grape::CommSpec comm_spec;
+    comm_spec.Init(MPI_COMM_WORLD);
+
+    if (comm_spec.worker_id() == grape::kCoordinatorRank) {
+      std::cout << "Triangle Counting Algorithm on GRAPE Platform" << std::endl;
+    }
+
+    using fragment_t = grape::ImmutableEdgecutFragment<grape::EmptyType, grape::EmptyType>;
+    using app_t = TriangleCount<fragment_t>;
+    using context_t = TriangleCountContext<fragment_t>;
+
+    grape::Runner<fragment_t, app_t> runner;
+    runner.Run(argc, argv, comm_spec);
+  }
+  grape::FinalizeMPIComm();
+  return 0;
+}

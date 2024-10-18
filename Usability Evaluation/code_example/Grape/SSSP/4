@@ -1,0 +1,115 @@
+#include <test/test.h>
+
+template <typename FRAG_T>
+class SSSPContext : public VertexDataContext<FRAG_T, double> {
+ public:
+  using fragment_t = FRAG_T;
+  using vertex_t = typename fragment_t::vertex_t;
+  using VertexDataContext<FRAG_T, double>::partial_result;
+
+  explicit SSSPContext(const fragment_t& fragment)
+      : VertexDataContext<FRAG_T, double>(fragment), source_id(0) {}
+
+  void Init(message_manager_t& messages, int src_id) {
+    source_id = src_id;
+    auto& frag = this->fragment();
+    auto vertices = frag.Vertices();
+    partial_result.Init(vertices, std::numeric_limits<double>::max());
+    curr_modified.Init(vertices);
+    next_modified.Init(vertices);
+  }
+
+  void Finalize() {
+    // Clean up context if needed
+  }
+
+  int source_id;
+  DenseVertexSet curr_modified, next_modified;
+};
+
+template <typename FRAG_T>
+class SSSP : public ParallelAppBase<FRAG_T, SSSPContext<FRAG_T>> {
+ public:
+  INSTALL_PARALLEL_WORKER(SSSP<FRAG_T>, SSSPContext<FRAG_T>, FRAG_T)
+
+  using fragment_t = FRAG_T;
+  using context_t = SSSPContext<FRAG_T>;
+  using vertex_t = typename fragment_t::vertex_t;
+
+  void PEval(const fragment_t& frag, context_t& ctx, message_manager_t& messages) {
+    messages.InitChannels(GetThreadPool().size());
+    auto source = frag.GetInnerVertex(ctx.source_id);
+    if (source.IsValid()) {
+      ctx.partial_result[source] = 0;
+      auto es = frag.GetOutgoingAdjList(source);
+      for (auto& e : es) {
+        auto v = e.get_neighbor();
+        ctx.partial_result[v] = std::min(ctx.partial_result[v], e.get_data());
+        if (frag.IsOuterVertex(v)) {
+          messages.Channels()[0].SyncStateOnOuterVertex(frag, v, ctx.partial_result[v]);
+        } else {
+          ctx.next_modified.Insert(v);
+        }
+      }
+      messages.ForceContinue();
+    }
+    ctx.next_modified.Swap(ctx.curr_modified);
+  }
+
+  void IncEval(const fragment_t& frag, context_t& ctx, message_manager_t& messages) {
+    ctx.next_modified.ParallelClear(GetThreadPool());
+    messages.ParallelProcess(GetThreadPool().size(), frag, [&ctx](int tid, vertex_t u, double msg) {
+      if (ctx.partial_result[u] > msg) {
+        atomic_min(ctx.partial_result[u], msg);
+        ctx.curr_modified.Insert(u);
+      }
+    });
+
+    for (auto v : ctx.curr_modified) {
+      auto distv = ctx.partial_result[v];
+      auto es = frag.GetOutgoingAdjList(v);
+      for (auto& e : es) {
+        auto u = e.get_neighbor();
+        auto ndistu = distv + e.get_data();
+        if (ndistu < ctx.partial_result[u]) {
+          atomic_min(ctx.partial_result[u], ndistu);
+          ctx.next_modified.Insert(u);
+        }
+      }
+    }
+
+    for (auto v : ctx.next_modified) {
+      if (frag.IsOuterVertex(v)) {
+        messages.Channels()[0].SyncStateOnOuterVertex(frag, v, ctx.partial_result[v]);
+      }
+    }
+
+    if (!ctx.next_modified.Empty()) {
+      messages.ForceContinue();
+    }
+    ctx.next_modified.Swap(ctx.curr_modified);
+  }
+};
+
+// Pseudocode for running the SSSP algorithm
+void RunSSSP(fragment_t& frag, int source_id) {
+  SSSPContext<fragment_t> context(frag);
+  ParallelMessageManager messages;
+
+  context.Init(messages, source_id);
+  SSSP<fragment_t> app;
+
+  app.PEval(frag, context, messages);
+  while (messages.NeedContinue()) {
+    app.IncEval(frag, context, messages);
+  }
+
+  for (auto v : frag.InnerVertices()) {
+    auto d = context.partial_result[v];
+    if (d == std::numeric_limits<double>::max()) {
+      std::cout << frag.GetId(v) << " infinity" << std::endl;
+    } else {
+      std::cout << frag.GetId(v) << " " << d << std::endl;
+    }
+  }
+}

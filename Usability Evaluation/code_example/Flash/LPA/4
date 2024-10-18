@@ -1,0 +1,83 @@
+#include "../core/api.h"
+
+// Define macro functions
+#define DefineMapV(name) auto name = [](auto &v) -> auto
+#define DefineMapE(name) auto name = [](auto &s, auto &d) -> void
+#define DefineFV(name) auto name = [](auto &v) -> bool
+
+int main(int argc, char *argv[]) {
+    // Initialize the runtime environment
+    MPI_Init(&argc, &argv);
+
+    // Load the graph dataset
+    Graph<int> G;
+    SetDataset(G, argv[1], argv[2]);
+
+    // Define INIT function
+    DefineMapV(init) {
+        v.c = id(v);
+        v.cc = -1;
+        v.s.clear();
+        return v;
+    };
+
+    // Define UPDATE function
+    DefineMapE(update) {
+        d.s.push_back(s.c);
+    };
+
+    // Define LOCAL1 function
+    DefineMapV(local1) {
+        int max_cnt = 0;
+        vector<int> cnt(n_vertex, 0);
+        for (auto &i : v.s) {
+            cnt[i]++;
+            if (cnt[i] > max_cnt) {
+                max_cnt = cnt[i];
+                v.cc = i;
+            }
+        }
+        v.s.clear();
+        return v;
+    };
+
+    // Define FILTER function
+    DefineFV(filter) {
+        return v.cc != v.c;
+    };
+
+    // Define LOCAL2 function
+    DefineMapV(local2) {
+        v.c = v.cc;
+    };
+
+    // Initialize all vertices using vertexMap
+    vertexSubset A = vertexMap<int>(All, CTrueV, init);
+
+    // Total processing time measurement
+    auto start_time = std::chrono::steady_clock::now();
+
+    // Repeat for 100 iterations or until size of A is 0
+    for (int round = 0; round < 100 && Size(A) > 0; ++round) {
+        printf("Round %d, A size: %d\n", round, Size(A));
+        
+        // Apply edgeMapDense to update edges using UPDATE
+        A = edgeMapDenseFunction<int>(G, A, CTrueE, All, update, CTrueV);
+
+        // Apply vertexMap to process vertices using LOCAL1
+        A = vertexMap<int>(A, CTrueV, local1);
+
+        // Apply vertexMap to filter and update vertices using FILTER and LOCAL2
+        A = vertexMap<int>(A, filter, local2);
+    }
+
+    auto end_time = std::chrono::steady_clock::now();
+    std::chrono::duration<double> total_time = end_time - start_time;
+
+    // Print total processing time
+    printf("Total processing time: %f seconds\n", total_time.count());
+
+    // Finalize the MPI environment
+    MPI_Finalize();
+    return 0;
+}

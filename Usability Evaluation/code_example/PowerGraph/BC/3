@@ -1,0 +1,79 @@
+
+#include <test.hpp>
+#include <graphlab.hpp>
+
+// Define vertex and edge data types
+struct vertex_data {
+  float centrality;
+  vertex_data() : centrality(0) {}
+  void save(graphlab::oarchive& oarc) const {
+    oarc << centrality;
+  }
+  void load(graphlab::iarchive& iarc) {
+    iarc >> centrality;
+  }
+};
+
+struct edge_data {
+  void save(graphlab::oarchive& oarc) const {}
+  void load(graphlab::iarchive& iarc) {}
+};
+
+typedef graphlab::distributed_graph<vertex_data, edge_data> graph_type;
+
+// Define the vertex program for Betweenness Centrality
+class betweenness_centrality_vprog : 
+  public graphlab::ivertex_program<graph_type, float>,
+  public graphlab::IS_POD_TYPE {
+public:
+  edge_dir_type gather_edges(icontext_type& context, const vertex_type& vertex) const {
+    return graphlab::IN_EDGES;
+  }
+
+  float gather(icontext_type& context, const vertex_type& vertex, edge_type& edge) const {
+    return edge.source().data().centrality;
+  }
+
+  void apply(icontext_type& context, vertex_type& vertex, const float& total) {
+    vertex.data().centrality += total;
+  }
+
+  edge_dir_type scatter_edges(icontext_type& context, const vertex_type& vertex) const {
+    return graphlab::OUT_EDGES;
+  }
+
+  void scatter(icontext_type& context, const vertex_type& vertex, edge_type& edge) const {
+    context.signal(edge.target());
+  }
+};
+
+int main(int argc, char** argv) {
+  // Initialize MPI
+  graphlab::mpi_tools::init(argc, argv);
+  graphlab::distributed_control dc;
+
+  // Parse command line options
+  graphlab::command_line_options clopts("Betweenness Centrality algorithm.");
+  std::string graph_dir;
+  clopts.attach_option("graph", &graph_dir, graph_dir, "The graph file.");
+  if (!clopts.parse(argc, argv)) {
+    std::cout << "Error parsing arguments." << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  // Load the graph
+  graph_type graph(dc, clopts);
+  graph.load_structure(graph_dir, "tsv");
+  graph.finalize();
+  std::cout << "#vertices: " << graph.num_vertices() << " #edges: " << graph.num_edges() << std::endl;
+
+  // Initialize the engine
+  graphlab::async_consistent_engine<betweenness_centrality_vprog> engine(dc, graph, clopts);
+  engine.signal_all();
+  engine.start();
+  std::cout << "Runtime: " << engine.elapsed_seconds() << std::endl;
+
+  // Finalize MPI
+  graphlab::mpi_tools::finalize();
+  return EXIT_SUCCESS;
+}

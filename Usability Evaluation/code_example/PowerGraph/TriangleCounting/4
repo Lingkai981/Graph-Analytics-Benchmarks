@@ -1,0 +1,69 @@
+#include <test.hpp> // Recommended header file
+
+// Initialization function
+void INIT_CONTROL(graphlab::distributed_control& dc, int& argc, char**& argv, graph_type& graph) {
+    graphlab::mpi_tools::init(argc, argv);
+    graphlab::command_line_options clopts("Triangle Counting");
+    std::string prefix;
+    clopts.attach_option("graph", prefix, "The graph file prefix.");
+    clopts.parse(argc, argv);
+    graph.load_format(prefix, "snap"); // Assume 'snap' format for example
+    graph.finalize();
+}
+
+// Main function for triangle counting
+void TRIANGLE_COUNT_MAIN(int argc, char** argv) {
+    graphlab::distributed_control dc;
+    graph_type graph(dc);
+    INIT_CONTROL(dc, argc, argv, graph);
+
+    bool PER_VERTEX_COUNT = false;
+    std::string per_vertex;
+    graphlab::command_line_options clopts("Triangle Counting");
+    clopts.attach_option("per_vertex", per_vertex, "Count triangles per vertex.");
+    clopts.parse(argc, argv);
+    PER_VERTEX_COUNT = !per_vertex.empty();
+
+    graphlab::timer timer;
+    TRIANGLE_COUNT(dc, graph);
+    std::cout << "Triangle Count Runtime: " << timer.current_time() << " seconds" << std::endl;
+
+    if (!PER_VERTEX_COUNT) {
+        GET_TOTAL_TRIANGLES(dc, graph);
+    } else {
+        PER_VERTEX_COUNT(dc, graph, per_vertex);
+    }
+    FINALIZE();
+}
+
+// Function to count triangles
+void TRIANGLE_COUNT(graphlab::distributed_control& dc, graph_type& graph) {
+    graphlab::async_consistent_engine<triangle_count> engine(dc, graph);
+    engine.signal_all();
+    engine.start();
+    std::cout << "Triangle Count Completed" << std::endl;
+}
+
+// Function to get total triangles
+void GET_TOTAL_TRIANGLES(graphlab::distributed_control& dc, graph_type& graph) {
+    size_t total_triangles = graph.map_reduce_edges<size_t>(get_edge_data);
+    std::cout << "Total Triangles: " << total_triangles << std::endl;
+}
+
+// Function to count triangles per vertex
+void PER_VERTEX_COUNT(graphlab::distributed_control& dc, graph_type& graph, const std::string& per_vertex) {
+    graphlab::async_consistent_engine<get_per_vertex_count> engine(dc, graph);
+    engine.signal_all();
+    engine.start();
+    graph.save(per_vertex, save_triangle_count());
+}
+
+// Finalize function
+void FINALIZE() {
+    graphlab::mpi_tools::finalize();
+}
+
+int main(int argc, char** argv) {
+    TRIANGLE_COUNT_MAIN(argc, argv);
+    return 0;
+}

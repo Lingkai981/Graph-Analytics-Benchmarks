@@ -1,0 +1,99 @@
+
+#include <test.hpp>
+#include <graphlab.hpp>
+#include <vector>
+#include <limits>
+
+typedef graphlab::distributed_graph<int, double> graph_type;
+typedef graphlab::vertex_id_type vertex_id_type;
+typedef graphlab::empty edge_data_type;
+
+struct vertex_data {
+  double betweenness;
+  vertex_data() : betweenness(0) {}
+  explicit vertex_data(double b) : betweenness(b) {}
+};
+
+struct gather_type {
+  std::vector<double> dependencies;
+  gather_type() : dependencies() {}
+  gather_type& operator+=(const gather_type& other) {
+    for (size_t i = 0; i < dependencies.size(); ++i) {
+      dependencies[i] += other.dependencies[i];
+    }
+    return *this;
+  }
+};
+
+class betweenness_centrality :
+    public graphlab::ivertex_program<graph_type, gather_type>,
+    public graphlab::IS_POD_TYPE {
+public:
+  std::vector<vertex_id_type> predecessors;
+  std::vector<double> dependencies;
+  double num_shortest_paths;
+
+  void init(icontext_type& context, const vertex_type& vertex, const gather_type& total) {
+    if (context.iteration() == 0) {
+      num_shortest_paths = 0;
+      dependencies.clear();
+      dependencies.resize(context.num_vertices(), 0.0);
+      predecessors.clear();
+    } else {
+      dependencies = total.dependencies;
+    }
+  }
+
+  edge_dir_type gather_edges(icontext_type& context, const vertex_type& vertex) const {
+    return graphlab::IN_EDGES;
+  }
+
+  gather_type gather(icontext_type& context, const vertex_type& vertex, edge_type& edge) const {
+    gather_type gather_data;
+    gather_data.dependencies.resize(context.num_vertices(), 0.0);
+    for (size_t i = 0; i < dependencies.size(); ++i) {
+      gather_data.dependencies[i] = dependencies[i];
+    }
+    return gather_data;
+  }
+
+  void apply(icontext_type& context, vertex_type& vertex, const gather_type& total) {
+    vertex.data().betweenness += total.dependencies[vertex.id()];
+  }
+
+  edge_dir_type scatter_edges(icontext_type& context, const vertex_type& vertex) const {
+    return graphlab::OUT_EDGES;
+  }
+
+  void scatter(icontext_type& context, const vertex_type& vertex, edge_type& edge) const {
+    vertex_id_type target = edge.target().id();
+    if (dependencies[target] > 0) {
+      context.signal(edge.target());
+    }
+  }
+};
+
+int main(int argc, char** argv) {
+  graphlab::mpi_tools::init(argc, argv);
+  graphlab::distributed_control dc;
+
+  graphlab::command_line_options clopts("Betweenness Centrality Algorithm");
+  std::string graph_dir;
+  clopts.attach_option("graph", graph_dir, "The graph file directory");
+  if (!clopts.parse(argc, argv) || graph_dir.empty()) {
+    dc.cout() << "Error in parsing command line arguments." << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  graph_type graph(dc, clopts);
+  graph.load(graph_dir, graphlab::graph_loader::edge_list_loader);
+  graph.finalize();
+
+  graphlab::omni_engine<betweenness_centrality> engine(dc, graph, "sync", clopts);
+  engine.signal_all();
+  engine.start();
+
+  graph.save("betweenness_centrality", graphlab::vertex_writer<int, double>());
+  graphlab::mpi_tools::finalize();
+  return EXIT_SUCCESS;
+}

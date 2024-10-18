@@ -1,0 +1,34 @@
+
+object StaticPageRankExample {
+  def main(args: Array[String]) {
+    val conf = new SparkConf().setAppName("StaticPageRankExample")
+    val sc = new SparkContext(conf)
+
+    // Create an RDD for the vertices
+    val users: RDD[(VertexId, (String, String))] =
+      sc.parallelize(Array((3L, ("rxin", "student")), (7L, ("jgonzal", "postdoc")),
+        (5L, ("franklin", "prof")), (2L, ("istoica", "prof"))))
+
+    // Create an RDD for edges
+    val relationships: RDD[Edge[Int]] =
+      sc.parallelize(Array(Edge(3L, 7L, 1), Edge(5L, 3L, 1), Edge(2L, 5L, 1),
+        Edge(5L, 7L, 1), Edge(4L, 0L, 1), Edge(5L, 0L, 1)))
+
+    // Define a default user in case there are relationship with missing user
+    val defaultUser = ("John Doe", "Missing")
+
+    // Build the initial Graph
+    val graph = Graph(users, relationships, defaultUser)
+
+    // Run static PageRank
+    val staticPageRankGraph = graph.staticPageRank(numIter = 10)
+
+    // Join the ranks with the usernames
+    val ranksByUsername = staticPageRankGraph.vertices.join(users).map {
+      case (id, (rank, (username, _))) => (username, rank)
+    }
+
+    // Print the result
+    println(ranksByUsername.collect().mkString("\n"))
+  }
+}

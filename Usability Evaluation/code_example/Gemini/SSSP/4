@@ -1,0 +1,135 @@
+Here are the main API functions used, including their purposes, parameters, and some usage examples.
+
+1. template<typename T> T alloc_vertex_array()*
+Purpose: Allocates memory for a vertex array.
+Parameters: None.
+Returns: Pointer to the allocated vertex array.
+Usage Example:
+Weight *distance = graph->alloc_vertex_array<Weight>();
+2. VertexSubset alloc_vertex_subset()*
+Purpose: Allocates memory for a vertex subset.
+Parameters: None.
+Returns: Pointer to the allocated vertex subset.
+Usage Example:
+VertexSubset *active_in = graph->alloc_vertex_subset();
+3. template<typename T> void fill_vertex_array(T * array, T value)
+Purpose: Fills a vertex array with a specific value.
+Parameters:
+T *array: Pointer to the vertex array.
+T value: The value to fill the array with.
+Usage Example:
+graph->fill_vertex_array(distance, (Weight)1e9);
+4. template<typename R, typename M> R process_edges(...)
+Purpose: Processes edges using provided functions.
+Parameters:
+std::function<void(VertexId)> sparse_signal: Function to signal sparse processing.
+std::function<R(VertexId, M, VertexAdjList<EdgeData>)> sparse_slot: Function to process each edge in sparse mode.
+std::function<void(VertexId, VertexAdjList<EdgeData>)> dense_signal: Function to signal dense processing.
+std::function<R(VertexId, M)> dense_slot: Function to process each edge in dense mode.
+Bitmap *active: Bitmap indicating active vertices.
+Bitmap *dense_selective (optional): Bitmap for dense selective processing.
+Returns: Aggregated result of type R.
+Usage Example:
+active_vertices = graph->process_edges<VertexId, Weight>(
+  sparse_signal_function,
+  sparse_slot_function,
+  dense_signal_function,
+  dense_slot_function,
+  active_in
+);
+5. void gather_vertex_array(T * array, int root)
+Purpose: Gathers a vertex array from all partitions.
+Parameters:
+T *array: Pointer to the vertex array.
+int root: Root process for gathering.
+Usage Example:
+graph->gather_vertex_array(distance, 0);
+6. template<typename T> void dealloc_vertex_array(T * array)
+Purpose: Deallocates memory for a vertex array.
+Parameters:
+T *array: Pointer to the vertex array.
+Usage Example:
+graph->dealloc_vertex_array(distance);
+7. template<typename M> void emit(VertexId vtx, M msg)
+Purpose: Emits a message to a vertex.
+Parameters:
+VertexId vtx: Target vertex ID.
+M msg: Message to send.
+Usage Example:
+graph->emit(dst, msg);
+
+Below is the pseudocode:
+
+1: function INIT_GRAPH(graph, distance, active_in, active_out, root):
+   - distance = graph.alloc_vertex_array()
+   - active_in = graph.alloc_vertex_subset()
+   - active_out = graph.alloc_vertex_subset()
+   - active_in.clear()
+   - active_in.set_bit(root)
+   - graph.fill_vertex_array(distance, INF)
+   - distance[root] = 0
+   - return distance, active_in, active_out
+
+2: function RELAX_EDGES(graph, distance, active_in, active_out):
+   - active_out.clear()
+   - active_vertices = graph.process_edges(
+       sparse_signal_function:
+         - for each src in active_in:
+             - graph.emit(src, distance[src])
+       sparse_slot_function:
+         - for each edge from src to dst:
+             - relax_dist = distance[src] + edge_weight
+             - if relax_dist < distance[dst]:
+                 - if write_min(distance[dst], relax_dist):
+                     - active_out.set_bit(dst)
+                     - increment activated vertices
+       dense_signal_function:
+         - for each dst in active vertices:
+             - find minimum distance from incoming edges
+             - if new distance < current distance:
+                 - graph.emit(dst, new distance)
+       dense_slot_function:
+         - for each dst receiving a message:
+             - if message < distance[dst]:
+                 - write_min(distance[dst], message)
+                 - active_out.set_bit(dst)
+                 - increment activated vertices
+       active_in
+     )
+   - return active_vertices
+
+3: function COMPUTE_SSSP(graph, root):
+   - exec_time = -get_time()
+   - distance, active_in, active_out = INIT_GRAPH(graph, distance, active_in, active_out, root)
+   - active_vertices = 1
+   - while active_vertices > 0:
+       - print("Active vertices:", active_vertices)
+       - active_vertices = RELAX_EDGES(graph, distance, active_in, active_out)
+       - swap(active_in, active_out)
+   - exec_time += get_time()
+   - print("Execution time:", exec_time)
+   - graph.gather_vertex_array(distance, 0)
+   - if graph.partition_id == 0:
+       - max_v = root
+       - for each v in graph.vertices:
+           - if distance[v] < INF and distance[v] > distance[max_v]:
+               - max_v = v
+       - print("Farthest vertex:", max_v, "Distance:", distance[max_v])
+   - graph.dealloc_vertex_array(distance)
+   - delete active_in
+   - delete active_out
+
+4: function MAIN(argv):
+   - mpi = MPI_Instance(argv)
+   - if len(argv) < 4:
+       - print("Usage: sssp [file] [vertices] [root]")
+       - exit()
+   - graph = new Graph()
+   - graph.load_directed(argv[1], atoi(argv[2]))
+   - root = atoi(argv[3])
+   - COMPUTE_SSSP(graph, root)
+   - for run in range(5):
+       - COMPUTE_SSSP(graph, root)
+   - delete graph
+   - return 0
+

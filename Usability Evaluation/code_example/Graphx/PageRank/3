@@ -1,0 +1,32 @@
+
+
+object PageRankExample {
+  def main(args: Array[String]): Unit = {
+    // Initialize SparkContext
+    val conf = new SparkConf().setAppName("PageRankExample")
+    val sc = new SparkContext(conf)
+
+    // Load the edges as a graph
+    val graph = GraphLoader.edgeListFile(sc, "data/test/followers.txt")
+
+    // Run PageRank with a tolerance level of 0.0001
+    val ranks = graph.pageRank(0.0001).vertices
+
+    // Load user data
+    val users = sc.textFile("data/test/users.txt").map { line =>
+      val fields = line.split(",")
+      (fields(0).toLong, fields(1))
+    }
+
+    // Join the ranks with the usernames
+    val ranksByUsername = users.join(ranks).map {
+      case (id, (username, rank)) => (username, rank)
+    }
+
+    // Print the result
+    println(ranksByUsername.collect().mkString("\n"))
+
+    // Stop the SparkContext
+    sc.stop()
+  }
+}

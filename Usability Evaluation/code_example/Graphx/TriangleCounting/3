@@ -1,0 +1,32 @@
+
+object TriangleCountingExample {
+  def main(args: Array[String]) {
+    // Initialize SparkContext
+    val conf = new SparkConf().setAppName("Triangle Counting Example")
+    val sc = new SparkContext(conf)
+
+    // Load the edges in canonical order and partition the graph for triangle count
+    val graph = GraphLoader.edgeListFile(sc, "data/test/followers.txt", true)
+      .partitionBy(PartitionStrategy.RandomVertexCut)
+
+    // Find the triangle count for each vertex
+    val triCounts = graph.triangleCount().vertices
+
+    // Load the user data and create an RDD of (userId, username) pairs
+    val users = sc.textFile("data/test/users.txt").map { line =>
+      val fields = line.split(",")
+      (fields(0).toLong, fields(1))
+    }
+
+    // Join the triangle counts with the usernames
+    val triCountByUsername = users.join(triCounts).map { case (id, (username, tc)) =>
+      (username, tc)
+    }
+
+    // Print the result
+    println(triCountByUsername.collect().mkString("\n"))
+
+    // Stop the SparkContext
+    sc.stop()
+  }
+}

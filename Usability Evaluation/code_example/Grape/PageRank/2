@@ -1,0 +1,60 @@
+#include <test/test.h>
+
+namespace test {
+
+template <typename FRAG_T>
+class PageRankContext : public VertexDataContext<FRAG_T, double> {
+public:
+  using fragment_t = FRAG_T;
+  using vertex_t = typename fragment_t::vertex_t;
+  
+  void Init(FRAG_T& frag, parallel_engine_t& engine, message_manager_t& messages) override {
+    this->data_.Init(frag.Vertices().size());
+    for (auto v : frag.Vertices()) {
+      this->data_[v] = 1.0 / frag.Vertices().size();
+    }
+  }
+
+  void Finalize() override {
+    // Any cleanup code if necessary
+  }
+
+  double damping_factor = 0.85;
+  int max_iterations = 100;
+};
+
+template <typename FRAG_T>
+class PageRank : public ParallelAppBase<PageRank<FRAG_T>> {
+public:
+  using fragment_t = FRAG_T;
+  using vertex_t = typename fragment_t::vertex_t;
+  using context_t = PageRankContext<FRAG_T>;
+
+  void PEval(const fragment_t& frag, context_t& ctx, message_manager_t& messages) override {
+    for (auto v : frag.Vertices()) {
+      double rank = (1.0 - ctx.damping_factor) / frag.Vertices().size();
+      for (auto& e : frag.GetOutgoingAdjList(v)) {
+        vertex_t u = e.get_neighbor();
+        rank += ctx.damping_factor * ctx.data_[u] / frag.GetOutgoingAdjList(u).size();
+      }
+      ctx.data_[v] = rank;
+    }
+
+    messages.ForceContinue();
+  }
+
+  void IncEval(const fragment_t& frag, context_t& ctx, message_manager_t& messages) override {
+    for (int iter = 0; iter < ctx.max_iterations; ++iter) {
+      for (auto v : frag.Vertices()) {
+        double rank = (1.0 - ctx.damping_factor) / frag.Vertices().size();
+        for (auto& e : frag.GetOutgoingAdjList(v)) {
+          vertex_t u = e.get_neighbor();
+          rank += ctx.damping_factor * ctx.data_[u] / frag.GetOutgoingAdjList(u).size();
+        }
+        ctx.data_[v] = rank;
+      }
+    }
+  }
+};
+
+}  // namespace test

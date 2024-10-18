@@ -1,0 +1,48 @@
+#include <test/test.h>
+
+namespace grape {
+
+class TriangleCountingContext : public VertexDataContext<FRAG_T, int> {
+public:
+  using fragment_t = FRAG_T;
+  using data_t = int;
+
+  void Init(FRAG_T& frag, parallel_engine_t& engine, message_manager_t& messages) override {
+    // Initialize vertex data to zero
+    data_.Init(frag.Vertices().size());
+    for (auto v : frag.Vertices()) {
+      data_[v] = 0;
+    }
+  }
+
+  void Finalize() override {
+    // Finalize context, if needed
+  }
+
+  vertex_data_t data_;
+};
+
+template <typename FRAG_T>
+class TriangleCounting : public ParallelAppBase<TriangleCounting<FRAG_T>> {
+public:
+  INSTALL_PARALLEL_WORKER(TriangleCounting<FRAG_T>, TriangleCountingContext<FRAG_T>, FRAG_T)
+  
+  void PEval(const fragment_t& frag, context_t& ctx, message_manager_t& messages) override {
+    auto vertices = frag.Vertices();
+    for (auto u : vertices) {
+      for (auto v : frag.GetOutgoingAdjList(u)) {
+        for (auto w : frag.GetOutgoingAdjList(v)) {
+          if (frag.IsInnerVertex(w) && frag.IsConnected(w, u)) {
+            ctx.data_[u]++;
+          }
+        }
+      }
+    }
+  }
+
+  void IncEval(const fragment_t& frag, context_t& ctx, message_manager_t& messages) override {
+    // Incremental evaluation logic, if needed
+  }
+};
+
+}

@@ -1,0 +1,34 @@
+#include "../core/api.h"
+
+void labelPropagation(Graph &G, int max_iters) {
+    auto V = vertices(G);  // Get all vertices in the graph
+    auto labels = vertexMap(V, [](Vertex &v) { return v.id; });  // Initialize each vertex's label to its own id
+
+    auto labelUpdate = [&](Graph &G, auto &U, auto &labels) {
+        return edgeMapFunction(G, U,
+            [](Edge &e, Vertex &src, Vertex &dst) {
+                return dst.label > src.label;  // Condition to apply the map function
+            },
+            [&](Edge &e, Vertex &src, Vertex &dst) {
+                dst.label = std::min(dst.label, src.label);  // Update rule: propagate the smallest label
+            },
+            [](Vertex &v) { return false; },
+            [](Graph &G, Vertex &v) { return v.label; },
+            [](Graph &G, Vertex &v) { },
+            [](Graph &G, Vertex &v) { return false; },
+            [](Graph &G, Vertex &v) { return false; }
+        );
+    };
+
+    for (int iter = 0; iter < max_iters; ++iter) {
+        auto new_labels = labelUpdate(G, V, labels);
+
+        if (new_labels == labels) {
+            break;  // Stop if no label changes happened
+        }
+
+        labels = new_labels;  // Update labels
+    }
+
+    // Final labels are available in labels for each vertex
+}

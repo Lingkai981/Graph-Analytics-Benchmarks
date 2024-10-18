@@ -1,0 +1,69 @@
+#include "test.h"
+
+using namespace std;
+
+// Function to count triangles in a graph
+template <class vertex>
+struct CountTriangles {
+  vertex* V;
+  CountTriangles(vertex* V) : V(V) {}
+
+  // Function to apply to each edge
+  inline bool update(uintE s, uintE d) {
+    if (s < d) {
+      auto intersection = intersect(V[s].getOutNeighbors(), V[d].getOutNeighbors());
+      return intersection.size();
+    }
+    return 0;
+  }
+
+  // Function to apply to each vertex
+  inline bool updateAtomic(uintE s, uintE d) {
+    if (s < d) {
+      auto intersection = intersect(V[s].getOutNeighbors(), V[d].getOutNeighbors());
+      return intersection.size();
+    }
+    return 0;
+  }
+
+  // Function to apply to each vertex
+  inline bool cond(uintE d) { return true; }
+};
+
+// Main function to count triangles
+template <class vertex>
+size_t TriangleCount(graph<vertex>& GA) {
+  vertex* V = GA.V;
+  size_t n = GA.n;
+
+  // Create a subset of all vertices
+  vertexSubset Frontier(n, n);
+
+  // Apply the CountTriangles function to the graph
+  auto count_triangles = CountTriangles<vertex>(V);
+  vertexSubsetData<uintE> result = edgeMap(GA, Frontier, count_triangles, -1, no_output);
+
+  // Sum the results from all vertices
+  size_t total_triangles = result.toSparse().numNonzeros();
+
+  // Each triangle is counted three times, so divide by 3
+  return total_triangles / 3;
+}
+
+// Entry point for the Ligra platform
+int main(int argc, char* argv[]) {
+  commandLine P(argc, argv, "[-s] <inFile>");
+  char* iFile = P.getArgument(0);
+  bool symmetric = P.getOption("-s");
+
+  // Read the graph
+  graph<asymmetricVertex> G = readGraph<asymmetricVertex>(iFile, symmetric, false);
+  
+  // Count triangles
+  size_t triangle_count = TriangleCount(G);
+
+  // Print the result
+  cout << "Number of triangles: " << triangle_count << endl;
+
+  return 0;
+}

@@ -1,0 +1,91 @@
+#include "test.h"
+#include <tuple>
+#include <iostream>
+#include <algorithm>
+
+// Define the update function
+struct Update_Deg {
+  intE* Degrees;
+  Update_Deg(intE* _Degrees) : Degrees(_Degrees) {}
+  inline bool update(uintE s, uintE d) {
+    Degrees[d]--;
+    return true;
+  }
+};
+
+// Define the condition function for degree less than k
+struct Deg_LessThan_K {
+  intE* Degrees;
+  uintE k;
+  uintE* coreNumbers;
+  Deg_LessThan_K(intE* _Degrees, uintE _k, uintE* _coreNumbers) : Degrees(_Degrees), k(_k), coreNumbers(_coreNumbers) {}
+  inline bool operator () (uintE i) {
+    if (Degrees[i] < k) {
+      coreNumbers[i] = k - 1;
+      Degrees[i] = 0;
+      return true;
+    }
+    return false;
+  }
+};
+
+// Define the condition function for degree at least k
+struct Deg_AtLeast_K {
+  intE* Degrees;
+  uintE k;
+  Deg_AtLeast_K(intE* _Degrees, uintE _k) : Degrees(_Degrees), k(_k) {}
+  inline bool operator () (uintE i) {
+    return Degrees[i] >= k;
+  }
+};
+
+// Function to compute the largest k-Core
+template <class vertex>
+void computeCore(graph<vertex> GA) {
+  long n = GA.n;
+  bool* active = newA(bool, n);
+  parallel_for(long i = 0; i < n; i++) active[i] = true;
+  vertexSubset Frontier(n, n, active);
+  uintE* coreNumbers = newA(uintE, n);
+  intE* Degrees = newA(intE, n);
+  parallel_for(long i = 0; i < n; i++) {
+    Degrees[i] = GA.V[i].getOutDegree();
+    coreNumbers[i] = 0;
+  }
+
+  int largestCore = -1;
+
+  for (uintE k = 1; k <= n; k++) {
+    while (true) {
+      vertexSubset toRemove = vertexFilter(Frontier, Deg_LessThan_K(Degrees, k, coreNumbers));
+      vertexSubset remaining = vertexFilter(Frontier, Deg_AtLeast_K(Degrees, k));
+      Frontier.del();
+      Frontier = remaining;
+      if (toRemove.numNonzeros() == 0) {
+        toRemove.del();
+        break;
+      } else {
+        edgeMap(GA, toRemove, Update_Deg(Degrees), -1, no_output);
+        toRemove.del();
+      }
+    }
+
+    if (Frontier.numNonzeros() == 0) {
+      largestCore = k - 1;
+      break;
+    }
+  }
+
+  std::cout << "largestCore was " << largestCore << std::endl;
+
+  Frontier.del();
+  free(coreNumbers);
+  free(Degrees);
+}
+
+int main(int argc, char* argv[]) {
+  // Load the graph
+  graph<vertex> GA = readGraphFromFile(argv[1]);
+  computeCore(GA);
+  return 0;
+}

@@ -1,0 +1,85 @@
+#include "basic/test-dev.h"
+
+// Define the vertex class
+class Vertex : public VertexBase {
+public:
+    float value;  // PageRank value
+    vector<VertexID> edges;  // Outgoing edges
+
+    // Serialization and deserialization methods
+    void serialize(InputArchive& ar) {
+        ar >> value;
+        ar >> edges;
+    }
+
+    void deserialize(OutputArchive& ar) {
+        ar << value;
+        ar << edges;
+    }
+};
+
+// Define the worker class
+class PageRankWorker : public Worker<Vertex> {
+public:
+    // Initialization function
+    void init(Vertex& v) {
+        v.value = 1.0;  // Initialize PageRank value
+    }
+
+    // Compute function
+    void compute(Vertex& v, MessageContainer& messages) {
+        if (step_num() == 1) {
+            // Send initial PageRank value to neighbors
+            float initial_value = v.value / v.edges.size();
+            for (auto& neighbor : v.edges) {
+                send_message(neighbor, initial_value);
+            }
+        } else {
+            // Aggregate incoming messages
+            float sum = 0;
+            for (auto& msg : messages) {
+                sum += msg;
+            }
+            // Update PageRank value
+            v.value = 0.15 + 0.85 * sum;
+
+            // Send updated PageRank value to neighbors
+            float updated_value = v.value / v.edges.size();
+            for (auto& neighbor : v.edges) {
+                send_message(neighbor, updated_value);
+            }
+        }
+    }
+};
+
+// Define the combiner class (optional, but can be used for optimization)
+class PageRankCombiner : public Combiner<float> {
+public:
+    void combine(float& old, const float& new_msg) {
+        old += new_msg;
+    }
+};
+
+// Define the aggregator class (optional, but can be used for convergence check)
+class PageRankAggregator : public Aggregator<Vertex, float> {
+public:
+    void init() {
+        total_diff = 0;
+    }
+
+    void step_partial(Vertex& v) {
+        total_diff += fabs(v.value - v.prev_value);
+    }
+
+    void step_final(float& result) {
+        result = total_diff;
+    }
+
+private:
+    float total_diff;
+};
+
+// Register the worker and combiner
+REGISTER_WORKER(PageRankWorker);
+REGISTER_COMBINER(PageRankCombiner);
+REGISTER_AGGREGATOR(PageRankAggregator);

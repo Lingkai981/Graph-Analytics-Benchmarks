@@ -1,0 +1,72 @@
+#include <test/test.h>
+
+namespace test {
+
+template <typename FRAG_T>
+class LabelPropagationContext : public VertexDataContext<FRAG_T, typename FRAG_T::label_t> {
+public:
+  using fragment_t = FRAG_T;
+  using label_t = typename fragment_t::label_t;
+  using vertex_t = typename fragment_t::vertex_t;
+
+  void Init(FRAG_T& frag, parallel_engine_t& engine, message_manager_t& messages) override {
+    auto vertices = frag.Vertices();
+    this->data_.Init(vertices.size());
+    for (auto v : vertices) {
+      this->data_[v] = frag.GetId(v);  // Initialize each vertex's label to its ID
+    }
+  }
+
+  void Finalize() override {
+    // Final cleanup if needed
+  }
+};
+
+template <typename FRAG_T>
+class LabelPropagation : public ParallelAppBase<LabelPropagation<FRAG_T>> {
+public:
+  using fragment_t = FRAG_T;
+  using context_t = LabelPropagationContext<FRAG_T>;
+  using message_manager_t = ParallelMessageManager;
+  using vertex_t = typename fragment_t::vertex_t;
+  using label_t = typename fragment_t::label_t;
+
+  void PEval(const fragment_t& frag, context_t& ctx, message_manager_t& messages) override {
+    auto vertices = frag.Vertices();
+    for (auto v : vertices) {
+      messages.SendMsgThroughEdges(frag, v, ctx.data_[v]);
+    }
+    messages.ForceContinue();
+  }
+
+  void IncEval(const fragment_t& frag, context_t& ctx, message_manager_t& messages) override {
+    auto vertices = frag.Vertices();
+    for (auto v : vertices) {
+      std::unordered_map<label_t, int> label_count;
+      auto es = frag.GetOutgoingAdjList(v);
+      for (auto& e : es) {
+        auto neighbor = e.get_neighbor();
+        auto label = ctx.data_[neighbor];
+        label_count[label]++;
+      }
+      // Find the most frequent label
+      label_t max_label = ctx.data_[v];
+      int max_count = 0;
+      for (auto& pair : label_count) {
+        if (pair.second > max_count) {
+          max_count = pair.second;
+          max_label = pair.first;
+        }
+      }
+      if (ctx.data_[v] != max_label) {
+        ctx.data_[v] = max_label;
+        messages.SendMsgThroughEdges(frag, v, max_label);
+      }
+    }
+    if (messages.ForceContinue()) {
+      messages.ForceContinue();
+    }
+  }
+};
+
+}  // namespace test

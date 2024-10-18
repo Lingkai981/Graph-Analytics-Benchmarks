@@ -1,0 +1,44 @@
+#include "../core/api.h"
+
+// Function to find k-Cliques
+template <class G, class U, class F, class M, class C, class R, class H>
+int kClique(G& graph, VSet& currentClique, int k, H& h, F& f, M& m, C& c, R& r) {
+    if (k == 1) {
+        // If k is 1, each vertex in the currentClique is a valid clique
+        return Size(currentClique);
+    }
+
+    // Find the candidate vertices that can form a k-Clique with the current vertices
+    VSet candidates = edgeMapFunction(graph, currentClique, h, f, m, c, r);
+
+    // Recursively search for (k-1)-Cliques in the candidate vertices
+    int cliqueCount = 0;
+    for (auto& v : candidates) {
+        VSet extendedClique = currentClique.add(v);
+        cliqueCount += kClique(graph, extendedClique, k-1, h, f, m, c, r);
+    }
+
+    return cliqueCount;
+}
+
+int main(int argc, char* argv[]) {
+    // Initialize graph and vertex set
+    Graph<int> graph;
+    VSet initialSet = loadGraph(graph, argv[1]);
+
+    int k = atoi(argv[2]); // Size of the clique to find
+
+    // Define the various functions and handlers needed for FLASH API calls
+    auto h = [](auto){ return EU; }; // Example edge processing handler
+    auto f = [](auto v){ return v; }; // Example function to apply on edges
+    auto m = [](auto v){ return v; }; // Example map function
+    auto c = [](auto v){ return true; }; // Example filter condition
+    auto r = [](auto a, auto b){ return a + b; }; // Example reduction function
+
+    // Start the k-Clique finding process
+    int totalCliques = kClique(graph, initialSet, k, h, f, m, c, r);
+
+    printf("Total %d-Cliques: %d\n", k, totalCliques);
+
+    return 0;
+}

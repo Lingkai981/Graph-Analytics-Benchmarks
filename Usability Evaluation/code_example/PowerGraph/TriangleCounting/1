@@ -1,0 +1,87 @@
+#include <test.hpp>
+
+
+// Define the vertex data
+struct vertex_data_type {
+  uint32_t triangle_count;
+  vertex_data_type() : triangle_count(0) {}
+};
+
+// Define the edge data
+typedef graphlab::empty edge_data_type;
+
+// Define the graph type
+typedef graphlab::distributed_graph<vertex_data_type, edge_data_type> graph_type;
+
+// Gather type to collect neighbor's neighbors
+struct gather_type {
+  std::set<graphlab::vertex_id_type> neighbors;
+
+  gather_type& operator+=(const gather_type& other) {
+    neighbors.insert(other.neighbors.begin(), other.neighbors.end());
+    return *this;
+  }
+};
+
+// Vertex program for triangle counting
+class triangle_count_program :
+  public graphlab::ivertex_program<graph_type, gather_type, gather_type> {
+public:
+  edge_dir_type gather_edges(icontext_type& context, const vertex_type& vertex) const {
+    return graphlab::ALL_EDGES;
+  }
+
+  gather_type gather(icontext_type& context, const vertex_type& vertex, edge_type& edge) const {
+    gather_type gather;
+    gather.neighbors.insert(edge.target().id());
+    gather.neighbors.insert(edge.source().id());
+    return gather;
+  }
+
+  void apply(icontext_type& context, vertex_type& vertex, const gather_type& total) {
+    std::set<graphlab::vertex_id_type> intersection;
+    std::set_intersection(total.neighbors.begin(), total.neighbors.end(),
+                          total.neighbors.begin(), total.neighbors.end(),
+                          std::inserter(intersection, intersection.begin()));
+    vertex.data().triangle_count = intersection.size();
+  }
+
+  edge_dir_type scatter_edges(icontext_type& context, const vertex_type& vertex) const {
+    return graphlab::NO_EDGES;
+  }
+
+  void scatter(icontext_type& context, const vertex_type& vertex, edge_type& edge) const {}
+};
+
+// Main function
+int main(int argc, char** argv) {
+  // Initialize control plain using mpi
+  graphlab::mpi_tools::init(argc, argv);
+  graphlab::distributed_control dc;
+
+  // Parse command line options
+  graphlab::command_line_options clopts("Triangle Counting");
+  std::string graph_dir;
+  clopts.attach_option("graph", graph_dir, "The graph file. Required ");
+  if (!clopts.parse(argc, argv) || graph_dir.empty()) {
+    dc.cout() << "Error in parsing command line arguments." << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  // Load the graph
+  graph_type graph(dc, clopts);
+  graph.load(graph_dir, graphlab::snap_parser);
+  graph.finalize();
+
+  // Run the algorithm
+  graphlab::omni_engine<triangle_count_program> engine(dc, graph, "sync");
+  engine.signal_all();
+  engine.start();
+
+  // Save the final graph
+  graph.save("triangle_counts", graphlab::text_vertex_writer<graph_type>());
+
+  // Finalize control plain
+  graphlab::mpi_tools::finalize();
+  return EXIT_SUCCESS;
+}

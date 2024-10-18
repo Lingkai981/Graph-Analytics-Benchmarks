@@ -1,0 +1,95 @@
+#include "../core/api.h"
+#define THRESHOLD 100000
+
+using namespace std;
+
+// Define the functions as per given pseudocode
+DefineMapV(INIT) {
+    v.deg = deg(v);
+    v.id = id(v);
+    return v;
+}
+
+DefineFE(CHECK) {
+    return (s.deg > d.deg) || ((s.deg == d.deg) && (s.id > d.id));
+}
+
+DefineMapE(UPDATE) {
+    d.out.push_back(s.id);
+}
+
+// Function for computing k-cliques
+void COMPUTE(vector<int> &result, const vector<int> &cand, int nowk, int k, std::atomic<long long> &cnt_loc) {
+    if (nowk == k) {
+        cnt_loc++;
+        return;
+    }
+
+    vector<int> c(cand.size());
+    for (int u : cand) {
+        result[nowk] = u;
+        c.resize(cand.size());
+        int len = set_intersect(cand.begin(), cand.end(), GetV(u).out.begin(), GetV(u).out.end(), c.begin()) - c.begin();
+        if (len < k - nowk - 1) continue;
+        c.resize(len);
+        COMPUTE(result, c, nowk + 1, k, cnt_loc);
+    }
+}
+
+DefineFV(FILTER) {
+    return v.out.size() >= k - 1;
+}
+
+DefineMapV(LOCAL) {
+    vector<int> res(k);
+    res[0] = v.id;
+    COMPUTE(res, v.out, 1, k, cnt_loc);
+}
+
+// Main function to run the k-clique algorithm
+void kCliqueAlgorithm(Graph<int> &G, int k) {
+    std::atomic<long long> cnt_loc;
+
+    // Initialize all vertices
+    cout << "Loading..." << endl;
+    vertexSubset A = vertexMap(All, INIT);
+
+    // Apply edge processing
+    edgeMapDenseFunction(G, A, EU, CHECK, UPDATE, CTrueV);
+
+    // Compute cliques
+    cout << "Computing..." << endl;
+    A = vertexMap(A, FILTER, LOCAL);
+
+    // Aggregate results
+    long long cnt = Sum(cnt_loc);
+    cout << "Number of " << k << "-cliques = " << cnt << endl;
+    cout << "total time = " << GetTime() << endl;
+}
+
+int main(int argc, char* argv[]) {
+    // Initialize the MPI environment
+    MPI_Init(NULL, NULL);
+
+    // Check if the number of required parameters is provided
+    if (argc != 3) {
+        cerr << "Usage: " << argv[0] << " <input_graph> <k>" << endl;
+        return -1;
+    }
+
+    // Read input graph and k
+    string input_graph = argv[1];
+    int k = stoi(argv[2]);
+
+    // Load the graph
+    Graph<int> G;
+    G.load(input_graph);
+
+    // Execute k-clique algorithm
+    kCliqueAlgorithm(G, k);
+
+    // Finalize the MPI environment
+    MPI_Finalize();
+
+    return 0;
+}

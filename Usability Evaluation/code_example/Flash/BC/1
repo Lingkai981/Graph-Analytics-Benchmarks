@@ -1,0 +1,70 @@
+#include "../core/api.h"
+
+void BetweennessCentrality(Graph &G, vertexSubset &allVertices) {
+    // Initialize centrality scores to zero for each vertex
+    parallel_for (int i = 0; i < G.numVertices; i++) {
+        G.vertices[i].centrality = 0.0;
+    }
+
+    // Process each vertex as the source
+    for (int s = 0; s < G.numVertices; s++) {
+        std::vector<int> sigma(G.numVertices, 0);
+        std::vector<float> delta(G.numVertices, 0.0);
+        std::stack<int> S;
+        std::vector<std::vector<int>> P(G.numVertices);
+        sigma[s] = 1;
+
+        // BFS traversal
+        vertexSubset frontier = vertexSubset::singletonVertexSubset(G, s);
+        int depth = 0;
+
+        while(frontier.numVertices > 0) {
+            vertexSubset nextFrontier = EDGE_MAP(frontier, [&](int u, int v) {
+                if (G.vertices[v].dist == -1) {
+                    G.vertices[v].dist = depth + 1;
+                    nextFrontier.add(v);
+                }
+                if (G.vertices[v].dist == depth + 1) {
+                    sigma[v] += sigma[u];
+                    P[v].push_back(u);
+                }
+                return false;
+            }, G.edges, nullptr);
+
+            frontier = nextFrontier;
+            depth++;
+        }
+
+        // Back-propagate dependency
+        while (!S.empty()) {
+            int w = S.top();
+            S.pop();
+            for (int v : P[w]) {
+                delta[v] += (sigma[v] / sigma[w]) * (1 + delta[w]);
+            }
+            if (w != s) {
+                G.vertices[w].centrality += delta[w];
+            }
+        }
+    }
+
+    // Normalize the centrality scores
+    parallel_for (int i = 0; i < G.numVertices; i++) {
+        G.vertices[i].centrality /= 2.0;
+    }
+}
+
+int main() {
+    // Assuming the Graph G and allVertices are properly initialized
+    Graph G;
+    vertexSubset allVertices = vertexSubset::fromGraph(G);
+
+    BetweennessCentrality(G, allVertices);
+
+    // Display the centrality scores
+    for (int i = 0; i < G.numVertices; i++) {
+        std::cout << "Vertex " << i << " centrality: " << G.vertices[i].centrality << std::endl;
+    }
+
+    return 0;
+}

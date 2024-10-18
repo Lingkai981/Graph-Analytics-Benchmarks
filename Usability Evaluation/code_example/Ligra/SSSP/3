@@ -1,0 +1,61 @@
+
+#include "test.h"
+
+// Struct for the Bellman-Ford relaxation step
+struct BF_F {
+    int* ShortestPathLen;
+    bool* Visited;
+
+    BF_F(int* _ShortestPathLen, bool* _Visited) : ShortestPathLen(_ShortestPathLen), Visited(_Visited) {}
+
+    inline bool update(uintE s, uintE d, int w) {
+        if (ShortestPathLen[d] > ShortestPathLen[s] + w) {
+            ShortestPathLen[d] = ShortestPathLen[s] + w;
+            return true;
+        }
+        return false;
+    }
+
+    inline bool updateAtomic(uintE s, uintE d, int w) {
+        return (writeMin(&ShortestPathLen[d], ShortestPathLen[s] + w));
+    }
+
+    inline bool cond(uintE d) {
+        return true;
+    }
+};
+
+// Struct for resetting the visited vertices
+struct BF_Vertex_F {
+    bool* Visited;
+
+    BF_Vertex_F(bool* _Visited) : Visited(_Visited) {}
+
+    inline bool operator()(uintE i) {
+        Visited[i] = false;
+        return true;
+    }
+};
+
+void SingleSourceShortestPath(graph<vertex>& GA, int start) {
+    long n = GA.n;
+    int* ShortestPathLen = new int[n];
+    bool* Visited = new bool[n];
+
+    for (long i = 0; i < n; i++) {
+        ShortestPathLen[i] = INT_MAX;
+        Visited[i] = false;
+    }
+    ShortestPathLen[start] = 0;
+
+    vertexSubset Frontier(n, start); // Initialize the frontier with the starting vertex
+
+    while (Frontier.size() > 0) {
+        vertexSubset output = edgeMap(GA, Frontier, BF_F(ShortestPathLen, Visited), GA.m / 20, dense_forward);
+        vertexMap(output, BF_Vertex_F(Visited)); // Apply BF_Vertex_F to each vertex in the subset
+        Frontier = output;
+    }
+
+    delete[] ShortestPathLen;
+    delete[] Visited;
+}

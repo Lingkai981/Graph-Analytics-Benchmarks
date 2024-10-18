@@ -1,0 +1,32 @@
+
+object TriangleCounting {
+  def main(args: Array[String]): Unit = {
+    val conf = new SparkConf().setAppName("TriangleCounting").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    // Load the edges as a graph
+    val edges: RDD[Edge[Int]] = sc.textFile("path/to/your/edges.txt").map { line =>
+      val fields = line.split(" ")
+      Edge(fields(0).toLong, fields(1).toLong, 1)
+    }
+
+    // Create the graph
+    val graph = Graph.fromEdges(edges, 1)
+
+    // Ensure the edges are in canonical orientation (srcId < dstId)
+    val canonicalGraph = graph.mapEdges(e => if (e.srcId < e.dstId) e else Edge(e.dstId, e.srcId, e.attr))
+
+    // Partition the graph
+    val partitionedGraph = canonicalGraph.partitionBy(PartitionStrategy.RandomVertexCut)
+
+    // Run the triangle counting algorithm
+    val triangleCounts = partitionedGraph.triangleCount().vertices
+
+    // Collect and print the results
+    triangleCounts.collect().foreach { case (vertexId, count) =>
+      println(s"Vertex $vertexId is part of $count triangles.")
+    }
+
+    sc.stop()
+  }
+}

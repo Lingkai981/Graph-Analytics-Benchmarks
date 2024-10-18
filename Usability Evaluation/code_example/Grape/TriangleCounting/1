@@ -1,0 +1,37 @@
+#include <test/test.h>
+
+// Function to count triangles in an undirected graph
+int countTriangles(const std::vector<std::vector<int>>& adjMatrix) {
+    int V = adjMatrix.size();
+    int count = 0;
+
+    // Iterate through all possible triplets (i, j, k)
+    for (int i = 0; i < V; i++) {
+        for (int j = i + 1; j < V; j++) {
+            if (adjMatrix[i][j]) { // If there's an edge between i and j
+                for (int k = j + 1; k < V; k++) {
+                    if (adjMatrix[j][k] && adjMatrix[k][i]) { // Check if there's an edge between j and k and k and i
+                        count++;
+                    }
+                }
+            }
+        }
+    }
+
+    return count;
+}
+
+int main() {
+    // Example adjacency matrix of a graph
+    std::vector<std::vector<int>> adjMatrix = {
+        {0, 1, 1, 0},
+        {1, 0, 1, 1},
+        {1, 1, 0, 1},
+        {0, 1, 1, 0}
+    };
+
+    int triangleCount = countTriangles(adjMatrix);
+    std::cout << "Number of triangles in the graph: " << triangleCount << std::endl;
+
+    return 0;
+}

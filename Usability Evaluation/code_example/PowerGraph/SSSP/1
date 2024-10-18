@@ -1,0 +1,97 @@
+
+#include <test.hpp>
+#include <graphlab.hpp>
+#include <limits>
+#include <vector>
+
+// Define the vertex data type
+struct vertex_data {
+  double distance;
+  vertex_data() : distance(std::numeric_limits<double>::max()) {}
+  explicit vertex_data(double dist) : distance(dist) {}
+  void save(graphlab::oarchive &oarc) const { oarc << distance; }
+  void load(graphlab::iarchive &iarc) { iarc >> distance; }
+};
+
+// Define the edge data type
+struct edge_data {
+  double weight;
+  edge_data() : weight(1.0) {}
+  explicit edge_data(double w) : weight(w) {}
+  void save(graphlab::oarchive &oarc) const { oarc << weight; }
+  void load(graphlab::iarchive &iarc) { iarc >> weight; }
+};
+
+// Define the graph type
+typedef graphlab::distributed_graph<vertex_data, edge_data> graph_type;
+
+// Define the SSSP update function
+class sssp : public graphlab::ivertex_program<graph_type, double>,
+             public graphlab::IS_POD_TYPE {
+public:
+  double gather(icontext_type &context, const vertex_type &vertex,
+                edge_type &edge) const {
+    return edge.source().data().distance + edge.data().weight;
+  }
+
+  void apply(icontext_type &context, vertex_type &vertex,
+             const gather_type &total) {
+    if (vertex.data().distance > total) {
+      vertex.data().distance = total;
+      context.signal(vertex);
+    }
+  }
+
+  edge_dir_type scatter_edges(icontext_type &context,
+                              const vertex_type &vertex) const {
+    return graphlab::OUT_EDGES;
+  }
+
+  void scatter(icontext_type &context, const vertex_type &vertex,
+               edge_type &edge) const {
+    context.signal(edge.target());
+  }
+};
+
+// Initialize the graph with source vertex distance
+void init_vertex(graph_type::vertex_type &vertex) {
+  if (vertex.id() == 0) { // Assuming source vertex id is 0
+    vertex.data().distance = 0.0;
+  }
+}
+
+// Main function
+int main(int argc, char **argv) {
+  // Initialize control plain using mpi
+  graphlab::mpi_tools::init(argc, argv);
+  graphlab::distributed_control dc;
+
+  // Parse command line options
+  graphlab::command_line_options clopts("Single-Source Shortest Path Algorithm.");
+  std::string graph_dir;
+  clopts.attach_option("graph", graph_dir, "The graph file directory.");
+  if (!clopts.parse(argc, argv)) {
+    dc.cout() << "Error in parsing command line arguments." << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  // Load the graph
+  graph_type graph(dc, clopts);
+  graph.load(graph_dir, graphlab::distributed_graph_loader<graph_type>());
+  graph.finalize();
+
+  // Initialize the vertex data
+  graph.transform_vertices(init_vertex);
+
+  // Run the SSSP algorithm
+  graphlab::omni_engine<sssp> engine(dc, graph, "sync");
+  engine.signal_all();
+  engine.start();
+
+  // Save the results
+  graph.save("output", graphlab::save_vertex_data<graph_type::vertex_type>());
+
+  // Finalize control plain
+  graphlab::mpi_tools::finalize();
+  return EXIT_SUCCESS;
+}

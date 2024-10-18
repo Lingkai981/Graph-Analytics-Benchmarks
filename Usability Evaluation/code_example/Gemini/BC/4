@@ -1,0 +1,367 @@
+Here are the core API functions with their purposes, parameters, and meanings:
+
+1. alloc_vertex_array
+Purpose: Allocates memory for a vertex array.
+Parameters: None.
+Returns: Pointer to the allocated vertex array.
+Example Usage:
+double *num_paths = graph->alloc_vertex_array<double>();
+double *dependencies = graph->alloc_vertex_array<double>();
+
+2. alloc_vertex_subset
+Purpose: Allocates memory for a vertex subset.
+Parameters: None.
+Returns: Pointer to the allocated vertex subset.
+Example Usage:
+VertexSubset *active_all = graph->alloc_vertex_subset();
+VertexSubset *visited = graph->alloc_vertex_subset();
+VertexSubset *active_in = graph->alloc_vertex_subset();
+
+3. fill_vertex_array
+Purpose: Fills a vertex array with a specific value.
+Parameters:
+T *array: Pointer to the vertex array.
+T value: The value to fill the array with.
+Returns: None.
+Example Usage:
+graph->fill_vertex_array(num_paths, 0.0);
+
+4. process_edges
+Purpose: Processes edges using the provided functions.
+Template Parameters:
+R: The type of the result.
+M: The type of the message.
+Parameters:
+std::function<void(VertexId)> sparse_signal: Function called for each source vertex in sparse mode.
+std::function<R(VertexId, M, VertexAdjList<EdgeData>)> sparse_slot: Function called for each edge in sparse mode.
+std::function<void(VertexId, VertexAdjList<EdgeData>)> dense_signal: Function called for each destination vertex in dense mode.
+std::function<R(VertexId, M)> dense_slot: Function called for each message in dense mode.
+Bitmap *active: Bitmap indicating active vertices.
+Bitmap *dense_selective: Optional bitmap for dense selective processing.
+Returns: The aggregated result of type R.
+Example Usage:
+graph->process_edges<VertexId, double>(
+  [&](VertexId src) { graph->emit(src, num_paths[src]); },
+  [&](VertexId src, double msg, VertexAdjList<Empty> outgoing_adj) {
+    // Edge processing logic
+    return 0;
+  },
+  [&](VertexId dst, VertexAdjList<Empty> incoming_adj) {
+    // Edge processing logic
+  },
+  [&](VertexId dst, double msg) {
+    // Edge processing logic
+    return 0;
+  },
+  active_in, visited
+);
+
+5. process_vertices
+Purpose: Processes vertices based on an active bitmap.
+Template Parameter:
+R: The type of the result.
+Parameters:
+std::function<R(VertexId)> process: Function to process each vertex.
+Bitmap *active: Bitmap indicating active vertices.
+Returns: The aggregated result of type R.
+Example Usage:
+VertexId active_vertices = graph->process_vertices<VertexId>(
+  [&](VertexId vtx) {
+    visited->set_bit(vtx);
+    return 1;
+  },
+  active_out
+);
+
+6. emit
+Purpose: Emits a message to a vertex.
+Template Parameter:
+M: The type of the message.
+Parameters:
+VertexId vtx: Target vertex ID.
+M msg: Message to send.
+Returns: None.
+Example Usage:
+graph->emit(dst, sum);
+
+7. transpose
+Purpose: Transposes the graph.
+Parameters: None.
+Returns: None.
+Example Usage:
+graph->transpose();
+
+8. gather_vertex_array
+Purpose: Gathers a vertex array from all partitions.
+Template Parameter:
+T: The type of the elements in the array.
+Parameters:
+T *array: Pointer to the vertex array.
+int root: Root process for gathering.
+Returns: None.
+Example Usage:
+graph->gather_vertex_array(dependencies, 0);
+graph->gather_vertex_array(inv_num_paths, 0);
+
+9. dealloc_vertex_array
+Purpose: Deallocates memory for a vertex array.
+Template Parameter:
+T: The type of the elements in the array.
+Parameters:
+T *array: Pointer to the vertex array.
+Returns: None.
+Example Usage:
+graph->dealloc_vertex_array(dependencies);
+graph->dealloc_vertex_array(inv_num_paths);
+
+10. clear (VertexSubset)
+Purpose: Clears the vertex subset.
+Parameters: None.
+Returns: None.
+Example Usage:
+visited->clear();
+active_in->clear();
+
+11. set_bit (VertexSubset)
+Purpose: Sets the bit for a specific vertex.
+Parameters:
+VertexId vtx: The vertex ID to set the bit for.
+Returns: None.
+Example Usage:
+visited->set_bit(root);
+active_in->set_bit(root);
+
+12. get_bit (VertexSubset)
+Purpose: Gets the bit for a specific vertex.
+Parameters:
+VertexId vtx: The vertex ID to get the bit for.
+Returns: The bit value (boolean).
+Example Usage:
+if (!visited->get_bit(dst)) {
+  // Do something
+}
+
+Below is the pseudocode:
+
+1: function COMPUTE(graph, root):
+   - Initialize execution time
+     - exec_time = 0
+     - exec_time -= get_time()
+
+   - Allocate and initialize arrays
+     - num_paths = graph.alloc_vertex_array()
+     - dependencies = graph.alloc_vertex_array()
+     - active_all = graph.alloc_vertex_subset()
+     - active_all.fill()
+     - visited = graph.alloc_vertex_subset()
+     - levels = []
+     - active_in = graph.alloc_vertex_subset()
+
+   - Initialize root vertex
+     - active_vertices = 1
+     - visited.clear()
+     - visited.set_bit(root)
+     - active_in.clear()
+     - active_in.set_bit(root)
+     - levels.push_back(active_in)
+     - graph.fill_vertex_array(num_paths, 0.0)
+     - num_paths[root] = 1.0
+
+   - Forward phase
+     - Print "forward" if graph.partition_id == 0
+     - For each level i_i until no active vertices:
+       - Print active vertices count if graph.partition_id == 0
+       - active_out = graph.alloc_vertex_subset()
+       - active_out.clear()
+       - graph.process_edges(
+           - Emit num_paths[src] for each src vertex
+           - Update num_paths[dst] for each outgoing edge
+           - Emit sum of num_paths[src] for each dst vertex
+           - Update num_paths[dst] for each incoming edge
+           - Use active_in and visited bitmaps
+         )
+       - active_vertices = graph.process_vertices(
+           - Set visited bit for each active_out vertex
+           - Return 1 for each active_out vertex
+         )
+       - levels.push_back(active_out)
+       - active_in = active_out
+
+   - Inverse paths and initialize dependencies
+     - inv_num_paths = num_paths
+     - graph.process_vertices(
+         - Set inv_num_paths[vtx] = 1 / num_paths[vtx]
+         - Set dependencies[vtx] = 0
+         - Use active_all bitmap
+       )
+
+   - Clear visited bitmap
+     - visited.clear()
+
+   - Backward phase
+     - graph.transpose()
+     - Print "backward" if graph.partition_id == 0
+     - While levels.size() > 1:
+       - graph.process_edges(
+           - Emit dependencies[src] for each src vertex
+           - Update dependencies[dst] for each outgoing edge
+           - Emit sum of dependencies[src] for each dst vertex
+           - Update dependencies[dst] for each incoming edge
+           - Use last level and visited bitmaps
+         )
+       - Delete last level and pop it from levels
+       - graph.process_vertices(
+           - Set visited bit for each level vertex
+           - Update dependencies[vtx]
+           - Use last level bitmap
+         )
+
+   - Final dependency adjustment
+     - graph.process_vertices(
+         - Adjust dependencies[vtx]
+         - Use active_all bitmap
+       )
+
+   - Transpose graph back
+     - graph.transpose()
+
+   - Calculate and print execution time
+     - exec_time += get_time()
+     - Print exec_time if graph.partition_id == 0
+
+   - Gather results
+     - graph.gather_vertex_array(dependencies, 0)
+     - graph.gather_vertex_array(inv_num_paths, 0)
+     - Print dependencies and inv_num_paths for first 20 vertices if graph.partition_id == 0
+
+   - Deallocate resources
+     - graph.dealloc_vertex_array(dependencies)
+     - graph.dealloc_vertex_array(inv_num_paths)
+     - delete visited
+     - delete active_all
+
+2: function COMPUTE_COMPACT(graph, root):
+   - Initialize execution time
+     - exec_time = 0
+     - exec_time -= get_time()
+
+   - Allocate and initialize arrays
+     - num_paths = graph.alloc_vertex_array()
+     - dependencies = graph.alloc_vertex_array()
+     - active_all = graph.alloc_vertex_subset()
+     - active_all.fill()
+     - visited = graph.alloc_vertex_subset()
+     - level = graph.alloc_vertex_array()
+     - active_in = graph.alloc_vertex_subset()
+     - active_out = graph.alloc_vertex_subset()
+
+   - Initialize root vertex
+     - visited.clear()
+     - visited.set_bit(root)
+     - active_in.clear()
+     - active_in.set_bit(root)
+     - active_vertices = graph.process_vertices(
+         - Set level[vtx] = 0 if active_in.get_bit(vtx)
+         - Set level[vtx] = graph.vertices otherwise
+         - Use active_all bitmap
+       )
+     - graph.fill_vertex_array(num_paths, 0.0)
+     - num_paths[root] = 1.0
+
+   - Forward phase
+     - Print "forward" if graph.partition_id == 0
+     - For each level i_i until no active vertices:
+       - Print active vertices count if graph.partition_id == 0
+       - active_out.clear()
+       - graph.process_edges(
+           - Emit num_paths[src] for each src vertex
+           - Update num_paths[dst] for each outgoing edge
+           - Emit sum of num_paths[src] for each dst vertex
+           - Update num_paths[dst] for each incoming edge
+           - Use active_in and visited bitmaps
+         )
+       - active_vertices = graph.process_vertices(
+           - Set visited bit for each active_out vertex
+           - Update level[vtx] to i_i + 1
+           - Use active_out bitmap
+         )
+       - Swap active_in and active_out
+
+   - Inverse paths and initialize dependencies
+     - inv_num_paths = num_paths
+     - graph.process_vertices(
+         - Set inv_num_paths[vtx] = 1 / num_paths[vtx]
+         - Set dependencies[vtx] = 0
+         - Use active_all bitmap
+       )
+
+   - Clear visited bitmap and initialize last level
+     - visited.clear()
+     - active_in.clear()
+     - graph.process_vertices(
+         - Set active_in bit if level[vtx] == i_i
+         - Use active_all bitmap
+       )
+     - graph.process_vertices(
+         - Set visited bit and update dependencies
+         - Use active_in bitmap
+       )
+
+   - Backward phase
+     - graph.transpose()
+     - Print "backward" if graph.partition_id == 0
+     - While i_i > 0:
+       - graph.process_edges(
+           - Emit dependencies[src] for each src vertex
+           - Update dependencies[dst] for each outgoing edge
+           - Emit sum of dependencies[src] for each dst vertex
+           - Update dependencies[dst] for each incoming edge
+           - Use active_in and visited bitmaps
+         )
+       - Decrement i_i
+       - active_in.clear()
+       - active_vertices = graph.process_vertices(
+           - Set active_in bit if level[vtx] == i_i
+           - Use active_all bitmap
+         )
+       - graph.process_vertices(
+           - Set visited bit and update dependencies
+           - Use active_in bitmap
+         )
+
+   - Final dependency adjustment
+     - graph.process_vertices(
+         - Adjust dependencies[vtx]
+         - Use active_all bitmap
+       )
+
+   - Transpose graph back
+     - graph.transpose()
+
+   - Calculate and print execution time
+     - exec_time += get_time()
+     - Print exec_time if graph.partition_id == 0
+
+   - Gather results
+     - graph.gather_vertex_array(dependencies, 0)
+     - graph.gather_vertex_array(inv_num_paths, 0)
+     - Print dependencies and inv_num_paths for first 20 vertices if graph.partition_id == 0
+
+   - Deallocate resources
+     - graph.dealloc_vertex_array(dependencies)
+     - graph.dealloc_vertex_array(inv_num_paths)
+     - delete visited
+     - delete active_all
+     - delete active_in
+     - delete active_out
+
+3: function MAIN(argc, argv):
+   - Initialize MPI instance
+   - Check for valid arguments
+     - If invalid, print usage and exit
+   - Initialize graph and root
+   - Load directed graph from file
+   - Run compute function 5 times
+     - If COMPACT, run compute_compact
+     - Otherwise, run compute
+   - Deallocate graph resources

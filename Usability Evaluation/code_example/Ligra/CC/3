@@ -1,0 +1,64 @@
+#include "test.h"
+
+// Define the structure for the connected component algorithm
+struct CC_F {
+  int* IDs;
+  CC_F(int* _IDs) : IDs(_IDs) {}
+  
+  bool update(int s, int d) {
+    if (IDs[s] < IDs[d]) {
+      IDs[d] = IDs[s];
+      return true;
+    }
+    return false;
+  }
+
+  bool updateAtomic(int s, int d) {
+    return (writeMin(&IDs[d], IDs[s]));
+  }
+
+  bool cond(int d) {
+    return true;
+  }
+};
+
+struct CC_Vertex_F {
+  int* IDs;
+  CC_Vertex_F(int* _IDs) : IDs(_IDs) {}
+
+  bool operator()(int i) {
+    return (IDs[i] == i);
+  }
+};
+
+template <class vertex>
+int* ConnectedComponents(graph<vertex>& GA) {
+  int n = GA.n;
+  int* IDs = new int[n];
+  parallel_for(int i = 0; i < n; i++) IDs[i] = i;
+
+  vertexSubset Frontier(n, n);
+  while (Frontier.numNonzeros() > 0) {
+    Frontier = edgeMap(GA, Frontier, CC_F(IDs), -1, no_dense);
+    vertexMap(Frontier, CC_Vertex_F(IDs));
+  }
+  
+  return IDs;
+}
+
+int main() {
+  // Load your graph here
+  graph<vertex> GA = loadGraph("path_to_graph_file");
+
+  // Compute the connected components
+  int* components = ConnectedComponents(GA);
+
+  // Output the component IDs
+  for (int i = 0; i < GA.n; i++) {
+    std::cout << "Vertex " << i << " is in component " << components[i] << std::endl;
+  }
+
+  // Clean up
+  delete[] components;
+  return 0;
+}

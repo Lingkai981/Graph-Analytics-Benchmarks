@@ -1,0 +1,353 @@
+This is the standard reference code:
+#include "../core/api.h"
+
+int main(int argc, char *argv[]) {
+	VertexType(float,val,float,next,int,deg);
+	SetDataset(argv[1], argv[2]);
+
+	DefineMapV(init) {v.val = 1.0/n_vertex; v.next = 0.0; v.deg = deg(v);};
+	DefineMapE(update) {d.next += 0.85*s.val/s.deg;};
+	DefineMapV(local) {v.val = v.next + 0.15/n_vertex; v.next = 0;};
+
+	vertexMap(All, CTrueV, init);
+
+	for(int i = 0; i < 10; ++i) {
+		print("Round %d\n", i);
+		edgeMapDense(All, EU, CTrueE, update, CTrueV);
+		vertexMap(All, CTrueV, local);
+	}
+
+	float max_val = -1; double tt = 0, t = GetTime();
+	All.Gather(if(v.val > max_val) max_val=v.val; tt += v.val);
+
+	print( "max_val=%0.5f, t_val=%0.5lf\ntotal time=%0.3lf secs\n", max_val, tt, t);
+
+	return 0;
+}
+
+Next, a few codes to be evaluated.
+The code 1:
+#include "../core/api.h"
+
+using namespace flash;
+
+class PageRank {
+public:
+    Graph G;
+    vertexSubset V;
+
+    PageRank(Graph &_G) : G(_G), V(vertexSubset(0, G.n)) {}
+
+    void initialize(vertexData<double> &pr, vertexData<double> &deg) {
+        VERTEXMAP(V, [&](vertex v) {
+            pr[v] = 1.0 / G.n;
+            deg[v] = static_cast<double>(neighbors(G, v).size());
+        });
+    }
+
+    void compute(vertexData<double> &pr, vertexData<double> &pr_new, vertexData<double> &deg) {
+        double damping = 0.85;
+        double epsilon = 1e-6;
+        int max_iters = 100;
+
+        for (int iter = 0; iter < max_iters; ++iter) {
+            // Initialize pr_new to the teleportation probability
+            VERTEXMAP(V, [&](vertex v) {
+                pr_new[v] = (1.0 - damping) / G.n;
+            });
+
+            // Compute contributions from neighbors
+            EDGEMAP(G.E, V, [&](vertex u, vertex v) {
+                if (deg[u] > 0) {
+                    pr_new[v] += damping * pr[u] / deg[u];
+                }
+                return true;
+            }, true); // Function returns true so all edges are processed
+
+            // Check for convergence
+            double delta = VERTEXMAP(V, [&](vertex v) {
+                double diff = pr_new[v] - pr[v];
+                pr[v] = pr_new[v];
+                return std::abs(diff);
+            }).sum<double>();
+
+            if (delta < epsilon) {
+                break;
+            }
+        }
+    }
+};
+
+int main(int argc, char *argv[]) {
+    // Initialize graph from input
+    Graph G = loadGraph(argv[1]);
+
+    vertexData<double> pr(G.n);
+    vertexData<double> pr_new(G.n);
+    vertexData<double> deg(G.n);
+
+    PageRank pr_algo(G);
+    pr_algo.initialize(pr, deg);
+    pr_algo.compute(pr, pr_new, deg);
+
+    // Output the PageRank values
+    for (size_t i = 0; i < G.n; ++i) {
+        std::cout << "Vertex " << i << ": " << pr[i] << std::endl;
+    }
+
+    return 0;
+}
+
+The code 2:
+#include "../core/api.h"
+
+// Graph structure
+struct Graph {
+    int numVertices;
+    std::vector<std::vector<int>> adjLists;
+};
+
+// Vertex set structure
+struct VSet {
+    std::set<int> vertices;
+    // Add required methods as per FLASH API needs
+};
+
+// PageRank values
+std::vector<double> pagerank;
+
+// Define constants
+const int MAX_ITER = 100;
+const double DAMPING_FACTOR = 0.85;
+const double EPSILON = 1e-6;
+
+// Used to initialize the rank values
+void vertexMapInitialization(int v) {
+    pagerank[v] = 1.0;
+}
+
+// Function applied on each edge in dense mode
+void edgeMapDense(Graph &G, VSet &U, VSet &T, std::vector<double> &newRank, double &outSum,
+                  std::vector<int> &outDegree) {
+    for (int u : U.vertices) {
+        for (int v : G.adjLists[u]) {
+            if (U.vertices.find(v) != U.vertices.end()) {
+                newRank[v] += DAMPING_FACTOR * pagerank[u] / outDegree[u];
+            }
+        }
+    }
+}
+
+// Reduction function for collecting ranks from sparse mode
+void edgeMapSparse(Graph &G, VSet &U, std::vector<double> &newRank, std::vector<int> &outDegree) {
+    for (int u : U.vertices) {
+        for (int v : G.adjLists[u]) {
+            newRank[v] += DAMPING_FACTOR * pagerank[u] / outDegree[u];
+        }
+    }
+}
+
+// Helper function to synchronize pages between iterations
+void synchronizeRanks(std::vector<double> &newRank) {
+    for (size_t i = 0; i < pagerank.size(); ++i) {
+        pagerank[i] = newRank[i];
+    }
+}
+
+// PageRank main function
+void computePageRank(Graph &G) {
+    int numNodes = G.numVertices;
+
+    // Initialize PageRank values
+    pagerank.resize(numNodes);
+    for (int i = 0; i < numNodes; ++i) {
+        vertexMapInitialization(i);
+    }
+
+    std::vector<int> outDegree(numNodes);
+    for (int i = 0; i < numNodes; ++i) {
+        outDegree[i] = G.adjLists[i].size();
+    }
+
+    VSet U;
+    for (int i = 0; i < numNodes; ++i) {
+        U.vertices.insert(i);
+    }
+
+    for (int iter = 0; iter < MAX_ITER; ++iter) {
+        std::vector<double> newRank(numNodes, (1.0 - DAMPING_FACTOR));
+
+        // Call the dense edge processing function
+        edgeMapDense(G, U, U, newRank, pagerank, outDegree);
+
+        // Optionally, you can switch to sparse mode based on the number of edges
+        // edgeMapSparse(G, U, newRank, outDegree);
+
+        synchronizeRanks(newRank);
+
+        // Check for convergence
+        double diff = 0.0;
+        for (int i = 0; i < numNodes; ++i) {
+            diff += fabs(newRank[i] - pagerank[i]);
+        }
+
+        if (diff < EPSILON) break;
+    }
+}
+
+The code 3:
+#include "../core/api.h"
+
+using namespace std;
+
+// Define the vertexMap function to initialize vertex values
+DefineMapV(initialize) {
+    v.val = 1.0 / G.get_vertex_count();
+    v.next = 0.0;
+    v.degree = G.degree(v);
+}
+
+// Define the edgeMapDense function to update vertex values
+DefineMapE(update) {
+    d.next += 0.85 * s.val / s.degree;
+}
+
+// Define Gather function to calculate the difference in PageRank values
+DefineGather(diff) {
+    double diff = 0.0;
+    for (auto &v : All) {
+        diff += abs(v.next - v.val);
+        v.val = v.next;
+        v.next = 0.0;
+    }
+    return diff;
+}
+
+// PageRank algorithm
+void PageRank(Graph &G, VSet &U) {
+    vertexMap(U, initialize);
+
+    double convergence_tol = 1e-6; // Tolerance for convergence
+    int max_iters = 100;           // Maximum number of iterations
+
+    for (int iter = 0; iter < max_iters; ++iter) {
+        edgeMapDense(G, U, EU, update, CTrueV);
+        double diff = Gather(diff);
+
+        if (diff < convergence_tol) break; // If converges, break the loop
+    }
+}
+
+int main(int argc, char* argv[]) {
+    if (argc < 2) {
+        printf("Usage: %s <path/to/dataset>\n", argv[0]);
+        return 1;
+    }
+
+    // Initialize MPI environment
+    MPI_Init(&argc, &argv);
+
+    string datasetPath = argv[1];
+    SetDataset(datasetPath, "");
+
+    Graph G;
+    VSet U = All; // Use all vertices
+
+    PageRank(G, U);
+
+    // Finalize MPI environment
+    MPI_Finalize();
+
+    return 0;
+}
+
+The code 4:
+#include "../core/api.h"
+
+using namespace std;
+
+// Initializing the vertex values
+DefineMapV(initialize) {
+    v.val = 1.0 / G.get_vertex_count();
+    v.next = 0.0;
+    v.deg = G.degree(v);
+    return v;
+}
+
+// Updating the vertex values in edgeMap function
+DefineMapE(update) {
+    d.next += 0.85 * s.val / s.deg;
+    return d;
+}
+
+// Updating the vertex values locally after edge updates
+DefineMapV(local) {
+    v.val = v.next + 0.15 / G.get_vertex_count();
+    v.next = 0;
+    return v;
+}
+
+// Function to gather maximum and total values
+DefineGather(gather_results) {
+    if (v.val > max_val) max_val = v.val;
+    total_value += v.val;
+}
+
+// PageRank algorithm
+void PageRank(Graph& G) {
+    VSet All = G.get_all_vertices();
+
+    // Initialize all vertices
+    vertexMap<VSet>(All, CTrueV, initialize);
+
+    for (int iter = 1; iter <= 10; ++iter) {
+        printf("Iteration: %d\n", iter);
+
+        // Apply edgeMapDense for updating values
+        edgeMapDenseFunction<VSet, DefineMapE, DefineMapV, CTrueE, Enum> edgeMapDense;
+        edgeMapDense(G, All, EU, update, CTrueV);
+
+        // Update the vertex values locally
+        vertexMap<VSet>(All, CTrueV, local);
+    }
+
+    double max_val = -1;
+    double total_value = 0;
+
+    // Measure processing time
+    auto start = std::chrono::steady_clock::now();
+
+    // Gather results
+    Gather(gather_results);
+
+    auto end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> processing_time = end - start;
+
+    // Print results
+    printf("Max Value: %f\n", max_val);
+    printf("Total Value: %f\n", total_value);
+    printf("Processing Time: %f seconds\n", processing_time.count());
+}
+
+int main(int argc, char* argv[]) {
+    if (argc < 2) {
+        printf("Usage: %s <path/to/dataset>\n", argv[0]);
+        return 1;
+    }
+
+    // Initialize MPI environment
+    MPI_Init(&argc, &argv);
+
+    string datasetPath = argv[1];
+    SetDataset(datasetPath, "");
+
+    Graph G;
+
+    // Call the PageRank function
+    PageRank(G);
+
+    // Finalize MPI environment
+    MPI_Finalize();
+
+    return 0;
+}

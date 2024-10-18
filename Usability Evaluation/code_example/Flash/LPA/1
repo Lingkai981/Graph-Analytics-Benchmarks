@@ -1,0 +1,52 @@
+#include "../core/api.h"
+
+// Function to initialize labels for each vertex
+void initialize_labels(vertexSubset &V, FlashGraph &G, std::vector<int> &labels) {
+    VERTEXMAP(V, [&](int v) {
+        labels[v] = v;
+        return 0;
+    });
+}
+
+// Function to propagate labels
+int propagate_labels(vertexSubset &V, FlashGraph &G, std::vector<int> &labels) {
+    bool changed = false;
+    VERTEXMAP(V, [&](int v) {
+        int max_label = labels[v];
+        G.iterate_edges(v, [&](int u) {
+            if (labels[u] > max_label) {
+                max_label = labels[u];
+                changed = true;
+            }
+            return 0;
+        });
+        labels[v] = max_label;
+        return 0;
+    });
+    return changed;
+}
+
+// Label Propagation main function
+void label_propagation(FlashGraph &G, int max_iter) {
+    vertexSubset V = VERTEX_RANGE(G.nv);
+    std::vector<int> labels(G.nv);
+
+    initialize_labels(V, G, labels);
+
+    int iter = 0;
+    while (iter < max_iter) {
+        int changed = propagate_labels(V, G, labels);
+        if (!changed) break;
+        iter++;
+    }
+
+    std::cout << "Completed " << iter << " iterations." << std::endl;
+    // Output labels or further processing
+}
+
+int main() {
+    FlashGraph G = FlashGraph::load_from_file("graph.txt");
+    int max_iter = 10;
+    label_propagation(G, max_iter);
+    return 0;
+}

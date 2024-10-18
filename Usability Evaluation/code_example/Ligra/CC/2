@@ -1,0 +1,59 @@
+#include "test.h"
+
+struct CC_F {
+  uintE* IDs;
+  CC_F(uintE* _IDs) : IDs(_IDs) {}
+
+  inline bool update(uintE s, uintE d) {
+    if (IDs[s] < IDs[d]) {
+      IDs[d] = IDs[s];
+      return true;
+    }
+    return false;
+  }
+
+  inline bool cond(uintE d) { return true; }
+};
+
+struct Initialize {
+  uintE* IDs;
+  Initialize(uintE* _IDs) : IDs(_IDs) {}
+
+  inline bool operator() (uintE i) {
+    IDs[i] = i;
+    return true;
+  }
+};
+
+vertexSubset connectedComponents(graph<vertex>& GA) {
+  long n = GA.n;
+  uintE* IDs = newA(uintE, n);
+  vertexSubset Frontier = vertexSubset(n, n, true);
+
+  // Initialize IDs
+  vertexMap(Frontier, Initialize(IDs));
+
+  bool change = true;
+  while (change) {
+    vertexSubset output = edgeMap(GA, Frontier, CC_F(IDs));
+    change = (output.numNonzeros() > 0);
+    Frontier = output;
+  }
+
+  return Frontier;
+}
+
+int main() {
+  // Assume GA is initialized with the graph
+  graph<vertex> GA = ...;
+
+  vertexSubset components = connectedComponents(GA);
+
+  // Output the component IDs
+  for (long i = 0; i < GA.n; ++i) {
+    std::cout << "Vertex " << i << " is in component " << IDs[i] << std::endl;
+  }
+
+  delete[] IDs;
+  return 0;
+}

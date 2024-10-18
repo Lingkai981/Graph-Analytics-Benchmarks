@@ -1,0 +1,55 @@
+#include <test/test.h>
+#include <grape/grape.h>
+
+class LabelPropagation : public grape::AppBase {
+public:
+    void Run() {
+        // Initialize the graph
+        grape::Graph graph;
+        graph.Load("path_to_graph_data");
+
+        // Initialize labels
+        std::vector<int> labels(graph.VertexCount());
+        for (int i = 0; i < graph.VertexCount(); ++i) {
+            labels[i] = i; // Each vertex starts with its own label
+        }
+
+        bool changed;
+        do {
+            changed = false;
+            // Iterate over all vertices
+            for (int v = 0; v < graph.VertexCount(); ++v) {
+                std::unordered_map<int, int> label_count;
+                // Iterate over neighbors
+                for (auto neighbor : graph.GetNeighbors(v)) {
+                    label_count[labels[neighbor]]++;
+                }
+                // Find the most frequent label among neighbors
+                int max_label = labels[v];
+                int max_count = 0;
+                for (auto& lc : label_count) {
+                    if (lc.second > max_count) {
+                        max_label = lc.first;
+                        max_count = lc.second;
+                    }
+                }
+                // Update label
+                if (labels[v] != max_label) {
+                    labels[v] = max_label;
+                    changed = true;
+                }
+            }
+        } while (changed);
+
+        // Output the labels
+        for (int i = 0; i < graph.VertexCount(); ++i) {
+            std::cout << "Vertex " << i << " has label " << labels[i] << std::endl;
+        }
+    }
+};
+
+int main() {
+    LabelPropagation lp;
+    lp.Run();
+    return 0;
+}

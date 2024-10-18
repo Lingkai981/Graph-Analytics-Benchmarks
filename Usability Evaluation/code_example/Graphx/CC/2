@@ -1,0 +1,37 @@
+
+// Initialize Spark context
+val conf = new SparkConf().setAppName("Connected Components").setMaster("local[*]")
+val sc = new SparkContext(conf)
+
+// Define the vertices
+val users: RDD[(VertexId, (String, String))] = sc.parallelize(Seq(
+  (3L, ("rxin", "student")),
+  (7L, ("jgonzal", "postdoc")),
+  (5L, ("franklin", "prof")),
+  (2L, ("istoica", "prof"))
+))
+
+// Define the edges
+val relationships: RDD[Edge[String]] = sc.parallelize(Seq(
+  Edge(3L, 7L, "collab"),
+  Edge(5L, 3L, "advisor"),
+  Edge(2L, 5L, "colleague"),
+  Edge(5L, 7L, "pi")
+))
+
+// Define a default user in case there are relationships with missing user information
+val defaultUser = ("John Doe", "Missing")
+
+// Build the initial Graph
+val graph = Graph(users, relationships, defaultUser)
+
+// Run the Connected Components algorithm
+val cc = graph.connectedComponents().vertices
+
+// Print the result
+cc.collect.foreach { case (id, cc) =>
+  println(s"Vertex $id is in connected component $cc")
+}
+
+// Stop the Spark context
+sc.stop()

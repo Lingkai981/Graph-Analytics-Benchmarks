@@ -1,0 +1,83 @@
+Main Functions and Analysis
+1. vertexMap
+Function Prototype:
+
+template<class VTYPE, class F, class M>
+inline VSet vertexMap(VSet &U, F &f, M &m, bool b = true);
+Parameters:
+
+U: A VSet representing the set of vertices.
+F: A function applied to each vertex.
+M: A mapping function to apply.
+b: A boolean flag (default true).
+Usage Example:
+VSet initialSet = vertexMap(vertices, init, local);
+This example applies the init function to initialize the vertices and then the local function to set the local values.
+
+2. edgeMapDenseFunction
+Function Prototype:
+
+template<class VTYPE, class F, class M, class C, class H>
+VSet edgeMapDenseFunction(Graph<VTYPE> &G, VSet &U, H h, VSet &T, F &f, M &m, C &c, bool b = true);
+Parameters:
+
+G: A Graph object.
+U: A VSet representing the set of vertices.
+H: A condition for edge traversal.
+T: A target vertex set.
+F: A function to apply to each edge.
+M: A mapping function for edge updates.
+C: A condition function.
+b: A boolean flag (default true).
+Usage Example:
+VSet updatedSet = edgeMapDenseFunction(graph, vertices, ED, targets, update1, local, condition);
+This example uses the update1 function to update edges and applies the local function while considering the condition defined by condition.
+
+3. edgeMapSparseFunction
+Function Prototype:
+
+template<class VTYPE, class F, class M, class C, class R>
+VSet edgeMapSparseFunction(Graph<VTYPE> &G, VSet &U, int h, F &f, M &m, C &c, R &r);
+Parameters:
+
+G: A Graph object.
+U: A VSet representing the set of vertices.
+H: A condition for edge traversal.
+F: A function to apply to each edge.
+M: A mapping function for edge updates.
+C: A condition function.
+R: A reduction function.
+Usage Example:
+VSet resultSet = edgeMapSparseFunction(graph, vertices, ED, update2, local, condition, reduce);
+This example uses the update2 function to update edges and applies the local function while considering the condition defined by condition and then reduces using reduce.
+
+4. edgeMapFunction
+Function Prototype:
+template<class VTYPE, class F, class M, class C, class R, class H>
+VSet edgeMapFunction(Graph<VTYPE> &G, VSet &U, H h, F &f, M &m, C &c, R &r);
+Parameters:
+
+G: A Graph object.
+U: A VSet representing the set of vertices.
+H: A condition for edge traversal.
+F: A function to apply to each edge.
+M: A mapping function for edge updates.
+C: A condition function.
+R: A reduction function.
+Usage Example:
+VSet finalSet = edgeMapFunction(graph, vertices, ED, update1, local, condition, reduce);
+This example uses the update1 function to update edges, applies the local function while considering the condition defined by condition, and reduces using reduce.
+
+5. vertexMap (Overloaded)
+Function Prototype:
+
+template<class VTYPE, class F>
+inline VSet vertexMap(VSet &U, F &f);
+Parameters:
+
+U: A VSet representing the set of vertices.
+F: A function applied to each vertex.
+Usage Example:
+
+VSet filteredSet = vertexMap(vertices, filter);
+This example applies the filter function to the set of vertices.

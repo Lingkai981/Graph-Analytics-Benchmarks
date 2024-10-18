@@ -1,0 +1,100 @@
+#include "../core/api.h"
+
+#define DefineMapV(name) auto name = [&](auto &v)
+#define DefineMapE(name) auto name = [&](auto &s, auto &d)
+
+inline double GetTime() {
+    return std::chrono::duration<double>(std::chrono::system_clock::now().time_since_epoch()).count();
+}
+
+// Main API functions declarations
+template<class VTYPE, class F, class M>
+inline VSet vertexMap(VSet &U, F &f, M &m, bool b = true) {
+    if (b)
+        return U.Filter(use_f_v(f)).Local(use_map_v(m));
+    else
+        return U.Filter(use_f_v(f)).Local(use_map_v(m), NONE);
+}
+
+template<class VTYPE, class F>
+inline VSet vertexMap(VSet &U, F &f) {
+    return U.Filter(use_f_v(f));
+}
+
+template<class VTYPE, class F, class M, class C, class R>
+VSet edgeMapSparseFunction(Graph<VTYPE> &G, VSet &U, int h, F &f, M &m, C &c, R &r) {
+    VSet res;
+    if (h == EU) {
+        DefineCmb(cmb) {
+            for_nb(if (use_cond(c) && use_f_sparse(f)) push_to(nb_id, _v = nb, use_sparse(m)));
+        };
+        res = U.Push(use_cmb(cmb), use_reduce(r));
+    } else if (h == ED) {
+        DefineCmb(cmb) {
+            for_out(if (use_cond(c) && use_f_sparse(f)) push_to(nb_id, _v = nb, use_sparse(m)));
+        };
+        res = U.Push(use_cmb(cmb), use_reduce(r));
+    } else if (h == ER) {
+        DefineCmb(cmb) {
+            for_in(if (use_cond(c) && use_f_sparse(f)) push_to(nb_id, _v = nb, use_sparse(m)));
+        };
+        res = U.Push(use_cmb(cmb), use_reduce(r));
+    } else {
+        res = U;
+    }
+    return res;
+}
+
+// Define the INIT function for initializing vertices
+DefineMapV(INIT) {
+    v.cid = deg(v) * (long long) n_vertex + id(v);
+    return v;
+};
+
+// Define the UPDATE function for updating vertices during edge traversal
+DefineMapE(UPDATE) {
+    d.cid = std::max(d.cid, s.cid);
+    return d;
+};
+
+int main(int argc, char *argv[]) {
+    // Initialize dataset
+    SetDataset(argv[1], argv[2]);
+
+    // Initialize all vertices using vertexMap
+    VSet All = GetAllVertices();
+    VSet A = vertexMap(All, CTrueV, INIT);
+
+    // Track total execution time
+    double startTime = GetTime();
+
+    // Repeat until A is empty
+    int round = 0;
+    while (!A.empty()) {
+        printf("Round %d: size of A = %lu\n", round, A.size());
+        A = edgeMapSparseFunction(All, A, EU, CTrueE, UPDATE, CTrueV, UPDATE);
+        round++;
+    }
+
+    // Measure total processing time
+    double totalTime = GetTime() - startTime;
+
+    // Initialize counters for connected components
+    std::vector<int> cnt(n_vertex, 0);
+    int nc = 0;
+    int lc = 0;
+
+    // Gather results
+    All.Gather([&](auto &v) {
+        if (cnt[v.cid % n_vertex] == 0) nc++;
+        cnt[v.cid % n_vertex]++;
+        lc = std::max(lc, cnt[v.cid % n_vertex]);
+    });
+
+    // Print results
+    printf("Number of connected components: %d\n", nc);
+    printf("Largest component size: %d\n", lc);
+    printf("Total time: %f seconds\n", totalTime);
+
+    return 0;
+}

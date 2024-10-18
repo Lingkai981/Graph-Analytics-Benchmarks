@@ -1,0 +1,115 @@
+#include <test/test.h>
+
+// Define the context class to hold vertex data
+template <typename FRAG_T>
+class SSSPContext : public VertexDataContext<FRAG_T, double> {
+public:
+    using vertex_t = typename FRAG_T::vertex_t;
+
+    explicit SSSPContext(const FRAG_T& fragment)
+        : VertexDataContext<FRAG_T, double>(fragment),
+          curr_modified(fragment.Vertices()),
+          next_modified(fragment.Vertices()) {}
+
+    void Init(const fragment_t& frag, parallel_engine_t& engine, message_manager_t& messages, vertex_t source_id) {
+        auto vertices = frag.Vertices();
+        this->partial_result.Init(vertices, std::numeric_limits<double>::max());
+        this->partial_result[source_id] = 0.0;
+        curr_modified.Insert(source_id);
+    }
+
+    void Finalize() {
+        curr_modified.Clear();
+        next_modified.Clear();
+    }
+
+    DenseVertexSet<vertex_t> curr_modified;
+    DenseVertexSet<vertex_t> next_modified;
+};
+
+// Define the SSSP application class
+template <typename FRAG_T>
+class SSSP : public ParallelAppBase<FRAG_T, SSSPContext<FRAG_T>> {
+public:
+    INSTALL_PARALLEL_WORKER(SSSP<FRAG_T>, SSSPContext<FRAG_T>, FRAG_T)
+
+    void PEval(const fragment_t& frag, context_t& ctx, message_manager_t& messages) {
+        auto inner_vertices = frag.InnerVertices();
+
+        for (auto u : inner_vertices) {
+            if (ctx.curr_modified.Exist(u)) {
+                auto es = frag.GetOutgoingAdjList(u);
+                double dist_u = ctx.partial_result[u];
+
+                for (auto& e : es) {
+                    auto v = e.get_neighbor();
+                    double new_dist = dist_u + e.get_data();
+
+                    if (new_dist < ctx.partial_result[v]) {
+                        ctx.partial_result[v] = new_dist;
+                        ctx.next_modified.Insert(v);
+                    }
+                }
+            }
+        }
+
+        messages.ForceContinue();
+    }
+
+    void IncEval(const fragment_t& frag, context_t& ctx, message_manager_t& messages) {
+        ctx.curr_modified.Swap(ctx.next_modified);
+        ctx.next_modified.ParallelClear(GetThreadPool());
+
+        auto inner_vertices = frag.InnerVertices();
+
+        for (auto u : inner_vertices) {
+            if (ctx.curr_modified.Exist(u)) {
+                auto es = frag.GetOutgoingAdjList(u);
+                double dist_u = ctx.partial_result[u];
+
+                for (auto& e : es) {
+                    auto v = e.get_neighbor();
+                    double new_dist = dist_u + e.get_data();
+
+                    if (new_dist < ctx.partial_result[v]) {
+                        ctx.partial_result[v] = new_dist;
+                        ctx.next_modified.Insert(v);
+                    }
+                }
+            }
+        }
+
+        if (!ctx.next_modified.Empty()) {
+            messages.ForceContinue();
+        }
+    }
+};
+
+// Main function to execute the SSSP application
+int main(int argc, char** argv) {
+    // Initialization code for the fragment, engine, and message manager
+    FRAG_T fragment;
+    parallel_engine_t engine;
+    message_manager_t messages;
+
+    // Define the source vertex ID
+    typename FRAG_T::vertex_t source_id = ...; // Initialize with the actual source vertex ID
+
+    // Create the SSSP context and initialize it
+    SSSPContext<FRAG_T> ctx(fragment);
+    ctx.Init(fragment, engine, messages, source_id);
+
+    // Create the SSSP application and run the PEval phase
+    SSSP<FRAG_T> app;
+    app.PEval(fragment, ctx, messages);
+
+    // Run the IncEval phase until no more updates
+    while (messages.Continue()) {
+        app.IncEval(fragment, ctx, messages);
+    }
+
+    // Finalize the context
+    ctx.Finalize();
+
+    return 0;
+}

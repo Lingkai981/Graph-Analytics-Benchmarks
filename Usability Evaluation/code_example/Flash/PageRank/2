@@ -1,0 +1,39 @@
+#include "../core/api.h"
+
+// Function to calculate the PageRank of vertices in a graph G
+void pageRank(Graph &G, float d, int iterations) {
+    int n = G.numVertices();
+    // Initialize vertex values
+    VertexValues<float> curr(PRInitialValue);
+    VertexValues<float> next(PRInitialValue);
+    VertexSubset U = V.range(n);
+
+    auto prUpdate = [&](Vertex v, float val) -> void { next[v] += val; };
+    auto prEdgeMap = [&](Vertex v, Vertex nb, float val) -> float { return val / G.outDegree(v); };
+    auto prVertexMap = [&](Vertex v) -> void { next[v] = d * next[v] + (1 - d); };
+
+    for (int i = 0; i < iterations; i++) {
+        edgeMapFunction(G, U, 0, prEdgeMap, prUpdate, minF);
+        vertexMap(U, prVertexMap, vertexF, true);
+        curr.swap(next);
+        next.assign(0.0);
+    }
+
+    // Print the PageRank values for each vertex
+    for (Vertex v = U.start(); v != U.end(); v = U.next()) {
+        std::cout << "Vertex " << v << " has PageRank: " << curr[v] << std::endl;
+    }
+}
+
+int main() {
+    Graph G;
+    // Load or generate the graph G
+    // G.loadGraph("path/to/your/graph");
+
+    float dampingFactor = 0.85;
+    int iterations = 20;
+
+    pageRank(G, dampingFactor, iterations);
+
+    return 0;
+}

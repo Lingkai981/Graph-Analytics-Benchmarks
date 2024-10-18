@@ -1,0 +1,86 @@
+#include <test.hpp>
+
+
+struct vertex_data {
+  float dist;
+  vertex_data() : dist(std::numeric_limits<float>::max()) {}
+};
+
+struct edge_data {
+  float dist;
+};
+
+typedef graphlab::distributed_graph<vertex_data, edge_data> graph_type;
+
+struct sssp : public graphlab::ivertex_program<graph_type, float> {
+  float min_distance;
+
+  void init(icontext_type& context, const vertex_type& vertex, const message_type& msg) {
+    min_distance = msg;
+  }
+
+  edge_dir_type gather_edges(icontext_type& context, const vertex_type& vertex) const {
+    return graphlab::NO_EDGES;
+  }
+
+  void apply(icontext_type& context, vertex_type& vertex, const gather_type& total) {
+    vertex.data().dist = std::min(vertex.data().dist, min_distance);
+  }
+
+  edge_dir_type scatter_edges(icontext_type& context, const vertex_type& vertex) const {
+    return graphlab::OUT_EDGES;
+  }
+
+  void scatter(icontext_type& context, const vertex_type& vertex, edge_type& edge) const {
+    const float new_dist = vertex.data().dist + edge.data().dist;
+    if (new_dist < edge.target().data().dist) {
+      context.signal(edge.target(), new_dist);
+    }
+  }
+
+  void save(graphlab::oarchive& oarc) const {
+    oarc << min_distance;
+  }
+
+  void load(graphlab::iarchive& iarc) {
+    iarc >> min_distance;
+  }
+};
+
+int main(int argc, char** argv) {
+  graphlab::mpi_tools::init(argc, argv);
+  graphlab::distributed_control dc;
+
+  graphlab::command_line_options clopts("Single Source Shortest Path Algorithm.");
+  std::string graph_dir;
+  clopts.attach_option("graph", &graph_dir, graph_dir, "The graph file.");
+  if (!clopts.parse(argc, argv)) {
+    std::cout << "Error parsing arguments." << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  graph_type graph(dc, clopts);
+  graph.load_structure(graph_dir, "tsv");
+  graph.finalize();
+  std::cout << "#vertices: " << graph.num_vertices() << " #edges: " << graph.num_edges() << std::endl;
+
+  graphlab::omni_engine<sssp> engine(dc, graph, "async", clopts);
+
+  std::vector<graphlab::vertex_id_type> sources;
+  sources.push_back(0); // Default to vertex 0 if no source provided
+
+  for (size_t i = 0; i < sources.size(); ++i) {
+    engine.signal(sources[i], 0.0);
+  }
+
+  engine.start();
+  std::cout << "Runtime: " << engine.elapsed_seconds() << " seconds" << std::endl;
+
+  std::string saveprefix;
+  if (!saveprefix.empty()) {
+    graph.save(saveprefix, graphlab::vertex_writer<vertex_data>(), false, true, false);
+  }
+
+  graphlab::mpi_tools::finalize();
+  return EXIT_SUCCESS;
+}

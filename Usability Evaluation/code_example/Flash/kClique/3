@@ -1,0 +1,37 @@
+#include "../core/api.h"
+
+// Function to find all k-cliques in a graph
+void kClique(Graph &G, int k) {
+    // Base case for k = 2
+    if (k == 2) {
+        DefineMapV(init) { v.deg = deg(v); v.id = id(v); return v; };
+        vertexSubset A = vertexMap(All, init);
+        return;
+    }
+
+    // Recursive case for k > 2
+    DefineFV(filter) { return v.out.size() >= k - 1; };
+    vertexSubset U = vertexMap(All, filter);
+
+    DefineFE(check) { return (s.deg > d.deg) || ((s.deg == d.deg) && (s.id > d.id)); };
+    DefineMapE(update) { d.out.push_back(s.id); };
+
+    while (Size(U) > 0) {
+        edgeMapDense(G, U, EU, check, update, CTrueV);
+        kClique(G, k - 1);  // Recursive call for (k-1)-clique
+        // Update U to remove vertices not part of (k-1)-clique
+        U = vertexMap(U, filter);
+    }
+}
+
+int main(int argc, char *argv[]) {
+    // Initialize the graph from input file
+    Graph G = readGraph(argv[1]);
+
+    int k = atoi(argv[2]); // k value provided as second argument
+
+    // Call the k-Clique function
+    kClique(G, k);
+
+    return 0;
+}

@@ -1,0 +1,48 @@
+#include "../core/api.h"
+
+class PageRank {
+public:
+    // Number of iterations for calculating PageRank
+    int num_iterations;
+    // Damping factor for PageRank
+    double damping_factor;
+    // Initial value for PageRank
+    double initial_value;
+
+    PageRank(int iterations, double damping, double initial)
+        : num_iterations(iterations), damping_factor(damping), initial_value(initial) {}
+
+    void run(graph G) {
+        // Initialize rank values
+        VERTEXMAP(double) rank(G, [this](intT v) { return this->initial_value; });
+
+        // Temporary storage for updated rank values
+        VERTEXMAP(double) tempRank(G, [](intT v) { return 0.0; });
+
+        for (int iteration = 0; iteration < num_iterations; ++iteration) {
+            auto rankDamp = (1.0 - damping_factor) / G.num_vertices();
+
+            VERTEXMAP(void) updateTempRank(G, rank, tempRank, rankDamp);
+            SWAP(rank, tempRank);
+        }
+
+        VERTEXMAP(void) finalize(G, rank);
+    }
+
+private:
+    VERTEXMAP(void) updateTempRank(graph G, VERTEXMAP(double) rank, VERTEXMAP(double) tempRank, double rankDamp) {
+        tempRank.clear();
+        EDGEMAP(G, [rank, tempRank](intT src, intT dst) {
+            tempRank[dst] += rank[src] / G.degree(src);
+        });
+
+        VERTEXMAP(G, [tempRank, rankDamp](intT v) {
+            tempRank[v] = rankDamp + (damping_factor * tempRank[v]);
+        });
+    }
+
+    VERTEXMAP(void) finalize(graph G, VERTEXMAP(double) rank) {
+        // Finalize the rank values (e.g., normalize them if needed)
+        // This step is optional and depends on specific requirements.
+    }
+};

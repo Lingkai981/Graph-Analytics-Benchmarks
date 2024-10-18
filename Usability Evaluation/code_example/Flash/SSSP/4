@@ -1,0 +1,82 @@
+#include "../core/api.h"
+
+using namespace std;
+
+// Define Map Functions
+DefineMapV(init_v) { v.dis = (v.id == source ? 0 : -1); }
+
+DefineFE(check) { return (d.dis < -0.5 || d.dis > s.dis + weight); }
+
+DefineMapE(update) {
+    if (d.dis < -0.5 || d.dis > s.dis + weight) {
+        d.dis = s.dis + weight;
+    }
+}
+
+DefineMapE(reduce) {
+    if (d.dis < -0.5 || d.dis > s.dis) {
+        d.dis = s.dis;
+    }
+}
+
+// VertexMap Function Implementation
+template<class VTYPE, class F, class M>
+inline VSet vertexMap(VSet &U, F &f, M &m, bool b = true) {
+    if (b)
+        return U.Filter(use_f_v(f)).Local(use_map_v(m));
+    else
+        return U.Filter(use_f_v(f)).Local(use_map_v(m), NONE);
+}
+
+template<class VTYPE, class F>
+inline VSet vertexMap(VSet &U, F &f) {
+    return U.Filter(use_f_v(f));
+}
+
+// EdgeMap Sparse Function Implementation
+template<class VTYPE, class F, class M, class C, class R, class H>
+VSet edgeMapSparseFunction(Graph<VTYPE> &G, VSet &U, H &h, F &f, M &m, C &c, R &r) {
+    VSet res;
+    DefineCmb(cmb) {
+        auto e = use_edge(h);
+        for (auto &i: e) {
+            VTYPE nb = get_v(i);
+            if (use_cond(c) && use_f_sparse(f))
+                push_to(i, _v = nb, use_sparse(m));
+        }
+    };
+    res = U.Push(use_cmb(cmb), use_reduce(r));
+    return res;
+}
+
+// EdgeMap Function Implementation
+template<class VTYPE, class F, class M, class C, class R, class H>
+VSet edgeMapFunction(Graph<VTYPE> &G, VSet &U, H h, F &f, M &m, C &c, R &r) {
+    int len = Size(U);
+    if (len > THRESHOLD)
+        return edgeMapDenseFunction(G, U, h, f, m, c);
+    else
+        return edgeMapSparseFunction(G, U, h, f, m, c, r);
+}
+
+template<class VTYPE, class F, class M, class C, class R, class H>
+VSet edgeMapFunction(Graph<VTYPE> &G, VSet &U, H h, VSet &T, F &f, M &m, C &c, R &r) {
+    return edgeMapFunction(G, U, h, f, m, c, r); // Reuses the previous definition of edgeMapFunction
+}
+
+// Single Source Shortest Path Algorithm
+void SingleSourceShortestPath(Graph<vertex_t>& graph, int source) {
+    vset_t a = All; // Initialize all vertices
+    a = vertexMap(a, CTrueV, init_v); // Apply INIT_V to all vertices
+
+    auto F_FILTER = [source](vertex_t v) { return v.id == source; };
+    a = vertexMap(a, F_FILTER); // Filter source vertex
+
+    int len = VSize(a), i = 1;
+    while (len > 0) {
+        cout << "Round " << i << " size=" << len << endl;
+        a = edgeMapFunction(graph, a, ED, check, update, CTrueV, reduce); // Apply EdgeMap
+        len = VSize(a);
+        i++;
+    }
+}

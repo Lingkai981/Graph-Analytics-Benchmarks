@@ -1,0 +1,93 @@
+#include <test.hpp>
+
+// Define the data stored in each vertex
+struct vertex_data {
+    float distance;
+    vertex_data(float dist = std::numeric_limits<float>::max()) : distance(dist) {}
+    void save(graphlab::oarchive& oarc) const { oarc << distance; }
+    void load(graphlab::iarchive& iarc) { iarc >> distance; }
+};
+
+// Define the data stored in each edge
+struct edge_data {
+    float weight;
+    edge_data(float w = 1.0) : weight(w) {}
+    void save(graphlab::oarchive& oarc) const { oarc << weight; }
+    void load(graphlab::iarchive& iarc) { iarc >> weight; }
+};
+
+// Define the graph type
+typedef graphlab::distributed_graph<vertex_data, edge_data> graph_type;
+typedef graphlab::empty message_type;
+
+class sssp : public graphlab::ivertex_program<graph_type, graphlab::empty, message_type> {
+public:
+    float min_distance;
+
+    void init(icontext_type& context, const vertex_type& vertex, const message_type& msg) {
+        min_distance = vertex.data().distance;
+    }
+
+    edge_dir_type gather_edges(icontext_type& context, const vertex_type& vertex) const {
+        return graphlab::IN_EDGES;
+    }
+
+    graphlab::empty gather(icontext_type& context, const vertex_type& vertex, edge_type& edge) const {
+        min_distance = std::min(min_distance, edge.source().data().distance + edge.data().weight);
+        return graphlab::empty();
+    }
+
+    void apply(icontext_type& context, vertex_type& vertex, const graphlab::empty& total) {
+        if (vertex.data().distance > min_distance) {
+            vertex.data().distance = min_distance;
+            context.signal(vertex);
+        }
+    }
+
+    edge_dir_type scatter_edges(icontext_type& context, const vertex_type& vertex) const {
+        return graphlab::OUT_EDGES;
+    }
+
+    void scatter(icontext_type& context, const vertex_type& vertex, edge_type& edge) const {
+        if (edge.target().data().distance > min_distance + edge.data().weight) {
+            context.signal(edge.target());
+        }
+    }
+
+    void save(graphlab::oarchive& oarc) const {}
+    void load(graphlab::iarchive& iarc) {}
+};
+
+int main(int argc, char** argv) {
+    graphlab::mpi_tools::init(argc, argv);
+    graphlab::distributed_control dc;
+    graphlab::command_line_options clopts("Single Source Shortest Path Algorithm.");
+    std::string graph_dir;
+    std::string format = "tsv";
+    std::string saveprefix;
+    clopts.attach_option("graph", graph_dir, "The graph file.");
+    clopts.attach_option("format", format, "graph format.");
+    clopts.attach_option("saveprefix", saveprefix, "Where to save the output.");
+
+    if (!clopts.parse(argc, argv)) {
+        std::cout << "Error parsing arguments." << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    graph_type graph(dc, clopts);
+    graph.load_format(graph_dir, format);
+    graph.finalize();
+    std::cout << "#vertices: " << graph.num_vertices() << " #edges: " << graph.num_edges() << std::endl;
+
+    graphlab::async_consistent_engine<sssp> engine(dc, graph, clopts);
+    engine.signal(0); // Assuming vertex 0 is the source vertex
+    engine.start();
+    std::cout << "Runtime: " << engine.elapsed_seconds() << std::endl;
+
+    if (saveprefix != "") {
+        graph.save(saveprefix, graphlab::vertex_writer<vertex_data>(), false, true, false);
+    }
+
+    graphlab::mpi_tools::finalize();
+    return EXIT_SUCCESS;
+}

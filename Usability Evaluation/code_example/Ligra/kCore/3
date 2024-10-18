@@ -1,0 +1,53 @@
+#include "test.h"
+
+// Define a condition function to filter vertices with degree less than k
+struct Deg_LessThan_K {
+  intE* Degrees;
+  uintE k;
+  Deg_LessThan_K(intE* _Degrees, uintE _k) : Degrees(_Degrees), k(_k) {}
+  inline bool operator () (uintE i) {
+    return Degrees[i] < k;
+  }
+};
+
+// Define an update function to decrement the degree of neighbors
+struct Update_Deg {
+  intE* Degrees;
+  Update_Deg(intE* _Degrees) : Degrees(_Degrees) {}
+  inline bool update(uintE s, uintE d) {
+    Degrees[d]--;
+    return 1;
+  }
+  inline bool updateAtomic(uintE s, uintE d) {
+    __sync_fetch_and_sub(&Degrees[d], 1);
+    return 1;
+  }
+  inline bool cond(uintE d) { return true; }
+};
+
+// The k-Core algorithm
+vertexSubset kCore(graph<vertex>& GA, uintE k) {
+  long n = GA.n;
+  intE* Degrees = newA(intE, n);
+  
+  // Initialize degrees
+  parallel_for(long i = 0; i < n; i++) {
+    Degrees[i] = GA.V[i].getOutDegree();
+  }
+
+  // Create a vertex subset with all vertices initially
+  bool* active = newA(bool, n);
+  parallel_for(long i = 0; i < n; i++) active[i] = 1;
+  vertexSubset Frontier(n, n, active);
+
+  // Iteratively remove vertices with degree less than k
+  while (true) {
+    vertexSubset toRemove = vertexFilter(Frontier, Deg_LessThan_K(Degrees, k));
+    if (toRemove.numRows() == 0) break;
+    edgeMap(GA, toRemove, Update_Deg(Degrees), -1, no_output);
+    Frontier = vertexFilter(Frontier, Deg_LessThan_K(Degrees, k));
+  }
+
+  delete[] Degrees;
+  return Frontier;
+}

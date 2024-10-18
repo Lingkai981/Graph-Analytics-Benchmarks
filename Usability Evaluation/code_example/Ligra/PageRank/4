@@ -1,0 +1,120 @@
+#include "test.h"
+
+// Functor for PageRank edge updates
+struct PR_F {
+    double* p_curr;
+    double* p_next;
+    vertex* V;
+
+    PR_F(double* _p_curr, double* _p_next, vertex* _V) : p_curr(_p_curr), p_next(_p_next), V(_V) {}
+
+    inline bool update(uintE s, uintE d) {
+        p_next[d] += p_curr[s] / V[s].getOutDegree();
+        return true;
+    }
+
+    inline bool updateAtomic(uintE s, uintE d) {
+        __sync_fetch_and_add(&p_next[d], p_curr[s] / V[s].getOutDegree());
+        return true;
+    }
+
+    inline bool cond(intT d) {
+        return true;
+    }
+};
+
+// Functor for PageRank vertex updates
+struct PR_Vertex_F {
+    double damping;
+    double addedConstant;
+    double* p_curr;
+    double* p_next;
+
+    PR_Vertex_F(double* _p_curr, double* _p_next, double _damping, double _addedConstant)
+        : p_curr(_p_curr), p_next(_p_next), damping(_damping), addedConstant(_addedConstant) {}
+
+    inline bool operator()(uintE i) {
+        p_next[i] = damping * p_next[i] + addedConstant;
+        return true;
+    }
+};
+
+// Functor for resetting PageRank values
+struct PR_Vertex_Reset {
+    double* p_curr;
+
+    PR_Vertex_Reset(double* _p_curr) : p_curr(_p_curr) {}
+
+    inline bool operator()(uintE i) {
+        p_curr[i] = 0.0;
+        return true;
+    }
+};
+
+// Functor for initializing PageRank values
+struct PR_Vertex_Init {
+    double* p_curr;
+    double init_value;
+
+    PR_Vertex_Init(double* _p_curr, double _init_value) : p_curr(_p_curr), init_value(_init_value) {}
+
+    inline bool operator()(uintE i) {
+        p_curr[i] = init_value;
+        return true;
+    }
+};
+
+// PageRank algorithm implementation
+void PageRank(graph<vertex>& GA, int maxIters, double damping, double epsilon) {
+    long n = GA.n;
+    double* p_curr = new double[n];
+    double* p_next = new double[n];
+    double init_value = 1.0 / n;
+    double addedConstant = (1.0 - damping) / n;
+
+    // Initialize p_curr and p_next
+    vertexMap(GA.V, PR_Vertex_Init(p_curr, init_value));
+    vertexMap(GA.V, PR_Vertex_Reset(p_next));
+
+    vertexSubset Frontier = vertexSubset(0, n, true); // All vertices
+
+    int iter = 0;
+    while (iter < maxIters) {
+        // Apply edgeMap to update p_next
+        edgeMap(GA, Frontier, PR_F(p_curr, p_next, GA.V), 0, no_output);
+
+        // Apply vertexMap to update p_curr
+        vertexMap(Frontier, PR_Vertex_F(p_curr, p_next, damping, addedConstant));
+
+        // Calculate L1_norm
+        double L1_norm = sequence::plusReduce(p_curr, n);
+        if (L1_norm < epsilon) break;
+
+        // Reset p_curr
+        vertexMap(Frontier, PR_Vertex_Reset(p_curr));
+
+        // Swap p_curr and p_next
+        std::swap(p_curr, p_next);
+
+        iter++;
+    }
+
+    // Clean up
+    delete[] p_curr;
+    delete[] p_next;
+}
+
+int main() {
+    // Load graph
+    graph<vertex> GA = loadGraph("path_to_graph");
+
+    // Parameters
+    int maxIters = 100;
+    double damping = 0.85;
+    double epsilon = 0.0000001;
+
+    // Compute PageRank
+    PageRank(GA, maxIters, damping, epsilon);
+
+    return 0;
+}

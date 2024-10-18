@@ -1,0 +1,67 @@
+#include <test/test.h>
+#include <vector>
+#include <stack>
+
+class ConnectedComponent {
+public:
+    ConnectedComponent(const Graph& graph) : graph(graph) {
+        int n = graph.numVertices();
+        visited.resize(n, false);
+        componentId.resize(n, -1);
+        componentCount = 0;
+
+        for (int v = 0; v < n; ++v) {
+            if (!visited[v]) {
+                dfs(v);
+                ++componentCount;
+            }
+        }
+    }
+
+    int count() const {
+        return componentCount;
+    }
+
+    int id(int v) const {
+        return componentId[v];
+    }
+
+private:
+    const Graph& graph;
+    std::vector<bool> visited;
+    std::vector<int> componentId;
+    int componentCount;
+
+    void dfs(int v) {
+        std::stack<int> stack;
+        stack.push(v);
+        visited[v] = true;
+        componentId[v] = componentCount;
+
+        while (!stack.empty()) {
+            int vertex = stack.top();
+            stack.pop();
+
+            for (int w : graph.adj(vertex)) {
+                if (!visited[w]) {
+                    stack.push(w);
+                    visited[w] = true;
+                    componentId[w] = componentCount;
+                }
+            }
+        }
+    }
+};
+
+int main() {
+    // Example usage:
+    Graph graph = createGraphFromInput(); // Assume this function creates a graph from input
+    ConnectedComponent cc(graph);
+
+    std::cout << "Number of connected components: " << cc.count() << std::endl;
+    for (int v = 0; v < graph.numVertices(); ++v) {
+        std::cout << "Vertex " << v << " is in component " << cc.id(v) << std::endl;
+    }
+
+    return 0;
+}

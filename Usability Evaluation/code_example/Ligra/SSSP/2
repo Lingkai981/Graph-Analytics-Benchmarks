@@ -1,0 +1,67 @@
+#include "test.h"
+#include "ligra.h"
+#include "vertex.h"
+#include "graph.h"
+
+using namespace std;
+
+// Define the SSSP function
+template <class vertex>
+void SSSP(graph<vertex>& GA, intT src) {
+    // Number of vertices
+    long n = GA.n;
+
+    // Initialize distances to infinity
+    intT* dist = new intT[n];
+    parallel_for(long i = 0; i < n; i++) {
+        dist[i] = INT_T_MAX;
+    }
+    dist[src] = 0;
+
+    // Initialize the frontier with the source vertex
+    vertexSubset frontier(n, src);
+
+    while (frontier.numNonzeros() > 0) {
+        // Apply edgeMap with a lambda function to update distances
+        vertexSubsetData<intT> output = edgeMap<intT>(
+            GA, frontier,
+            [&] (uintE u, uintE v, intT wgh) -> bool {
+                if (dist[v] > dist[u] + wgh) {
+                    dist[v] = dist[u] + wgh;
+                    return true;
+                }
+                return false;
+            },
+            -1, no_dense);
+
+        // Update the frontier
+        frontier = output.toVertexSubset();
+    }
+
+    // Output the distances
+    for (long i = 0; i < n; i++) {
+        if (dist[i] == INT_T_MAX) {
+            cout << "Vertex " << i << ": INF" << endl;
+        } else {
+            cout << "Vertex " << i << ": " << dist[i] << endl;
+        }
+    }
+
+    // Clean up
+    delete[] dist;
+}
+
+int main(int argc, char* argv[]) {
+    // Load the graph
+    commandLine P(argc, argv, "[-s] <inFile>");
+    char* iFile = P.getArgument(0);
+    bool symmetric = P.getOption("-s");
+    graph<asymmetricVertex> GA = readGraph<asymmetricVertex>(iFile, symmetric);
+
+    // Run SSSP from vertex 0
+    SSSP(GA, 0);
+
+    // Clean up
+    GA.del();
+    return 0;
+}

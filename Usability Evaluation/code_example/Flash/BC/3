@@ -1,0 +1,68 @@
+#include "../core/api.h"
+
+template <class Graph>
+VSet betweennessCentrality(Graph &G) {
+    // Initialize centrality scores
+    std::vector<double> centrality(G.numVertices(), 0.0);
+
+    // Perform BFS from each node
+    for (int s = 0; s < G.numVertices(); ++s) {
+        std::vector<int> distances(G.numVertices(), -1);
+        std::vector<int> numPaths(G.numVertices(), 0);
+        std::vector<double> dependencies(G.numVertices(), 0.0);
+
+        std::vector<int> stack;
+        std::queue<int> Q;
+
+        distances[s] = 0;
+        numPaths[s] = 1;
+        Q.push(s);
+
+        while (!Q.empty()) {
+            int v = Q.front();
+            Q.pop();
+            stack.push_back(v);
+
+            for (int w : G.getNeighbors(v)) {
+                if (distances[w] < 0) {
+                    Q.push(w);
+                    distances[w] = distances[v] + 1;
+                }
+                if (distances[w] == distances[v] + 1) {
+                    numPaths[w] += numPaths[v];
+                }
+            }
+        }
+
+        while (!stack.empty()) {
+            int w = stack.back();
+            stack.pop_back();
+
+            for (int v : G.getInNeighbors(w)) {
+                if (distances[v] == distances[w] - 1) {
+                    dependencies[v] += (numPaths[v] * 1.0 / numPaths[w]) * (1 + dependencies[w]);
+                }
+            }
+            if (w != s) {
+                centrality[w] += dependencies[w];
+            }
+        }
+    }
+
+    // Normalize results (Optional step)
+    double scale = 1.0 / ((G.numVertices() - 1) * (G.numVertices() - 2));
+    for (int i = 0; i < G.numVertices(); ++i) {
+        centrality[i] *= scale;
+    }
+
+    return centrality;
+}
+
+int main(int argc, char *argv[]) {
+    Graph G = loadGraph(argc, argv);
+    VSet result = betweennessCentrality(G);
+    for (int i = 0; i < result.size(); ++i) {
+        std::cout << "Vertex " << i << ": Betweenness Centrality = " << result[i] << std::endl;
+    }
+    return 0;
+}

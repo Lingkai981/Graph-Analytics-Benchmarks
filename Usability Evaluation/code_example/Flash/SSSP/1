@@ -1,0 +1,62 @@
+#include "../core/api.h"
+
+typedef double Weight;               // weight type
+struct SSSP_F {
+    int32_t *Parents;
+    Weight *Dist;
+    SSSP_F(int32_t *_Parents, Weight *_Dist) : Parents(_Parents), Dist(_Dist) {}
+
+    inline bool update(uint32_t s, uint32_t d, Weight w) {
+        Weight new_dist = Dist[s] + w;
+        if(new_dist < Dist[d]) {
+            Dist[d] = new_dist;
+            Parents[d] = s;
+            return true;
+        }
+        return false;
+    }
+
+    inline bool updateAtomic(uint32_t s, uint32_t d, Weight w) {
+        Weight new_dist = Dist[s] + w;
+        if(new_dist < Dist[d]) {
+            Weight old_dist = __sync_val_compare_and_swap(&Dist[d], Dist[d], new_dist);
+            if(new_dist < old_dist) {
+                Parents[d] = s;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    inline bool cond(uint32_t d) {
+        return true;
+    }
+};
+
+struct SSSP_Vertex_F {
+    int32_t src;
+    Weight *Dist;
+    SSSP_Vertex_F(int32_t _src, Weight *_Dist) : src(_src), Dist(_Dist) {}
+
+    inline bool operator()(uint32_t i) {
+        Dist[i] = std::numeric_limits<Weight>::max();
+        return true;
+    }
+};
+
+void SSSP(sgraph<Weight> &G, uint32_t src) {
+    int32_t n = G.num_vertices();
+    int32_t *Parents = new int32_t[n];
+    Weight *Dist = new Weight[n];
+
+    vertexSubset frontier = vertexMap(G, SSSP_Vertex_F(src, Dist));
+    Dist[src] = 0.0;
+
+    for (int32_t i = 0; frontier.size() > 0; i++) {
+        SSSP_F SSSP_F_inst(Parents, Dist);
+        frontier = edgeMap(G, frontier, SSSP_F_inst);
+    }
+
+    delete[] Parents;
+    delete[] Dist;
+}

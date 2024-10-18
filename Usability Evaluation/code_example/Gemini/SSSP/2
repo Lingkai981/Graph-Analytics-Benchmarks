@@ -1,0 +1,83 @@
+Here are the core API functions with their purposes, parameters, and meanings:
+
+1. template<typename T> void fill_vertex_array(T * array, T value)
+Purpose: Fills a vertex array with a specific value.
+Parameters:
+T *array: Pointer to the vertex array.
+T value: The value to fill the array with.
+Meaning: Initializes each element of the array to the specified value.
+2. template<typename T> T alloc_vertex_array()*
+Purpose: Allocates memory for a vertex array.
+Parameters: None.
+Meaning: Allocates memory for the array considering NUMA (Non-Uniform Memory Access) awareness.
+3. template<typename T> T dealloc_vertex_array(T * array)*
+Purpose: Deallocates memory for a vertex array.
+Parameters:
+T *array: Pointer to the vertex array.
+Meaning: Frees the allocated memory for the array.
+4. template<typename T> T alloc_interleaved_vertex_array()*
+Purpose: Allocates an interleaved vertex array.
+Parameters: None.
+Meaning: Allocates memory for the array in an interleaved manner for better performance.
+5. template<typename T> void dump_vertex_array(T * array, std::string path)
+Purpose: Dumps the vertex array to a file.
+Parameters:
+T *array: Pointer to the vertex array.
+std::string path: File path where the array will be saved.
+Meaning: Saves the content of the array to the specified file.
+6. template<typename T> void restore_vertex_array(T * array, std::string path)
+Purpose: Restores a vertex array from a file.
+Parameters:
+T *array: Pointer to the vertex array.
+std::string path: File path from where the array will be restored.
+Meaning: Loads the content of the array from the specified file.
+7. template<typename T> void gather_vertex_array(T * array, int root)
+Purpose: Gathers a vertex array from all partitions.
+Parameters:
+T *array: Pointer to the vertex array.
+int root: Root process for gathering.
+Meaning: Collects vertex array data from all partitions to the root.
+8. void load_undirected_from_directed(std::string path, VertexId vertices)
+Purpose: Loads a directed graph and makes it undirected.
+Parameters:
+std::string path: Path to the graph file.
+VertexId vertices: Number of vertices.
+Meaning: Converts a directed graph into an undirected graph.
+9. void transpose()
+Purpose: Transposes the graph.
+Parameters: None.
+Meaning: Swaps the out-degree and in-degree, and the outgoing and incoming edges.
+10. void load_directed(std::string path, VertexId vertices)
+Purpose: Loads a directed graph.
+Parameters:
+std::string path: Path to the graph file.
+VertexId vertices: Number of vertices.
+Meaning: Loads a graph from a file as a directed graph.
+11. void tune_chunks()
+Purpose: Tunes chunks for better performance.
+Parameters: None.
+Meaning: Adjusts the graph's partitioning for optimal processing.
+12. template<typename R> R process_vertices(std::function<R(VertexId)> process, Bitmap * active)
+Purpose: Processes vertices based on an active bitmap.
+Parameters:
+std::function<R(VertexId)> process: Function to process each vertex.
+Bitmap *active: Bitmap indicating active vertices.
+Meaning: Applies a function to active vertices and aggregates the results.
+13. template<typename M> void flush_local_send_buffer(int t_i)
+Purpose: Flushes the local send buffer.
+Parameters:
+int t_i: Thread index.
+Meaning: Sends the buffered messages to the designated buffers.
+14. template<typename M> void emit(VertexId vtx, M msg)
+Purpose: Emits a message to a vertex.
+Parameters:
+VertexId vtx: Target vertex ID.
+M msg: Message to send.
+Meaning: Buffers the message for the specified vertex.
+15. template<typename R, typename M> R process_edges(...)
+Purpose: Processes edges using provided functions.
+Parameters:
+Various lambda functions for sparse and dense processing.
+Bitmap *active: Bitmap indicating active vertices.
+Bitmap *dense_selective (optional): Bitmap for dense selective processing.
+Meaning: Applies functions to edges based on the processing mode (sparse or dense) and aggregates the results.

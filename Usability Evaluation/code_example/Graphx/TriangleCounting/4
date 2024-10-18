@@ -1,0 +1,36 @@
+
+object TriangleCountingExample {
+  def main(args: Array[String]): Unit = {
+    // Initialize Spark
+    val spark = SparkSession.builder()
+      .appName("TriangleCountingExample")
+      .getOrCreate()
+    val sc = spark.sparkContext
+
+    // Load the graph
+    val graph = GraphLoader.edgeListFile(sc, "data/test/followers.txt", true)
+
+    // Partition the graph
+    val partitionedGraph = graph.partitionBy(PartitionStrategy.RandomVertexCut)
+
+    // Count the triangles
+    val triCounts = partitionedGraph.triangleCount().vertices
+
+    // Load the users
+    val users = sc.textFile("data/test/users.txt").map { line =>
+      val fields = line.split(",")
+      (fields(0).toLong, fields(1))
+    }
+
+    // Join the triangle counts with the usernames
+    val triCountByUsername = users.join(triCounts).map { case (id, (username, tc)) =>
+      (username, tc)
+    }
+
+    // Print the result
+    println(triCountByUsername.collect().mkString("\n"))
+
+    // Stop Spark session
+    spark.stop()
+  }
+}

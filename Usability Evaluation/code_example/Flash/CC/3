@@ -1,0 +1,55 @@
+#include "../core/api.h"
+
+#include <functional>
+
+// Define the necessary map functions
+DefineMapV(init) {
+    v.cid = deg(v) * (long long) n_vertex + id(v);
+    return v;
+};
+
+DefineMapE(update) {
+    d.cid = max(d.cid, s.cid);
+    return d;
+};
+
+int main(int argc, char *argv[]) {
+    // Initialize MPI environment
+    MPI_Init(&argc, &argv);
+
+    // Load the graph
+    Graph<VTYPE> G = loadGraph(argv[1]);
+
+    // Initialize the vertex subset
+    VSet All = All(G);
+    vertexSubset CIDS = vertexMap<VTYPE>(All, init, CTrueV);
+
+    // Perform the connected components algorithm
+    bool changed = true;
+    while (changed) {
+        changed = false;
+        vertexSubset CIDS_NEW = edgeMap<VTYPE>(G, CIDS, EU, CTrueE, update, CTrueV, update);
+        if (Size(CIDS_NEW) > 0) {
+            changed = true;
+            CIDS = CIDS_NEW;
+        }
+    }
+
+    // Gather results
+    int nc = 0, lc = 0;
+    gather(All, [&](auto &v) {
+        if (cnt[v.cid % n_vertex] == 0)
+            ++nc;
+        ++cnt[v.cid % n_vertex];
+        lc = max(lc, cnt[v.cid % n_vertex]);
+    });
+
+    // Print the results
+    cout << "Number of connected components: " << nc << endl;
+    cout << "Largest component size: " << lc << endl;
+
+    // Finalize MPI environment
+    MPI_Finalize();
+
+    return 0;
+}

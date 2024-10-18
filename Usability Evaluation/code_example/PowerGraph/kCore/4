@@ -1,0 +1,89 @@
+#include <test.hpp>
+#include <graphlab.hpp>
+
+typedef graphlab::distributed_graph<vertex_data, edge_data> graph_type;
+typedef graph_type::vertex_type vertex_type;
+typedef graph_type::edge_type edge_type;
+
+size_t CURRENT_K = 0;
+
+struct vertex_data {
+  size_t data;
+  vertex_data() : data(0) {}
+};
+
+struct edge_data {
+  size_t data;
+  edge_data() : data(1) {}
+};
+
+void initialize_vertex_values(vertex_type& v) {
+  v.data() = v.num_in_edges() + v.num_out_edges();
+}
+
+void signal_vertices_at_k(graphlab::icontext_type& ctx, const vertex_type& v) {
+  if (v.data() > 0 && v.data() < CURRENT_K) {
+    ctx.signal(v);
+  }
+}
+
+size_t count_active_vertices(const vertex_type& v) {
+  return v.data() > 0 ? 1 : 0;
+}
+
+size_t double_count_active_edges(const edge_type& e) {
+  return e.data();
+}
+
+std::string save_core_at_k(const edge_type& e) {
+  if (e.source().data() > 0 && e.target().data() > 0) {
+    return std::to_string(e.source().id()) + "\t" + std::to_string(e.target().id()) + "\n";
+  }
+  return "";
+}
+
+int main(int argc, char** argv) {
+  graphlab::mpi_tools::init(argc, argv);
+  graphlab::distributed_control dc;
+  graphlab::command_line_options clopts("k-Core algorithm.");
+  std::string graph_dir;
+  std::string savecores;
+  size_t kmin, kmax;
+
+  clopts.attach_option("graph", &graph_dir, graph_dir, "The graph file.");
+  clopts.attach_option("savecores", &savecores, savecores, "Save cores.");
+  clopts.attach_option("kmin", &kmin, kmin, "Minimum k value.");
+  clopts.attach_option("kmax", &kmax, kmax, "Maximum k value.");
+
+  if (!clopts.parse(argc, argv)) {
+    std::cout << "Error parsing arguments." << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  graph_type graph(dc, clopts);
+  graph.load_structure(graph_dir, "tsv");
+  graph.finalize();
+  std::cout << "#vertices: " << graph.num_vertices() << " #edges: " << graph.num_edges() << std::endl;
+
+  graph.transform_vertices(initialize_vertex_values);
+
+  for (CURRENT_K = kmin; CURRENT_K <= kmax; ++CURRENT_K) {
+    graphlab::async_consistent_engine<signal_vertices_at_k> engine(dc, graph, clopts);
+    engine.map_reduce_vertices(signal_vertices_at_k);
+    engine.start();
+
+    size_t numv = graph.map_reduce_vertices<size_t>(count_active_vertices);
+    size_t nume = graph.map_reduce_edges<size_t>(double_count_active_edges) / 2;
+
+    if (numv == 0) break;
+
+    std::cout << "k=" << CURRENT_K << " numv=" << numv << " nume=" << nume << std::endl;
+
+    if (!savecores.empty()) {
+      graph.save(savecores + "." + std::to_string(CURRENT_K) + ".", save_core_at_k, false, false, true, clopts.get_ncpus());
+    }
+  }
+
+  graphlab::mpi_tools::finalize();
+  return EXIT_SUCCESS;
+}

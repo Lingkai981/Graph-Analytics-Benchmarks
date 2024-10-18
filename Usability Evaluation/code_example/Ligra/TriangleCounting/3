@@ -1,0 +1,70 @@
+#include "test.h"
+
+// Function to count common neighbors between two vertices
+template <class vertex>
+inline long countCommon(vertex& A, vertex& B, uintE a, uintE b) {
+    uintE* nghA = A.getOutNeighbors();
+    uintE* nghB = B.getOutNeighbors();
+    long dA = A.getOutDegree();
+    long dB = B.getOutDegree();
+    long i = 0, j = 0, count = 0;
+    while (i < dA && j < dB) {
+        if (nghA[i] == nghB[j]) {
+            count++;
+            i++;
+            j++;
+        } else if (nghA[i] < nghB[j]) {
+            i++;
+        } else {
+            j++;
+        }
+    }
+    return count;
+}
+
+// Function to initialize counts array and sort neighbors of each vertex
+struct initF {
+    vertex* V;
+    long* counts;
+    initF(vertex* _V, long* _counts) : V(_V), counts(_counts) {}
+    inline bool operator () (uintE i) {
+        counts[i] = 0;
+        quickSort(V[i].getOutNeighbors(), V[i].getOutDegree(), intLT());
+        return 1;
+    }
+};
+
+// Function to count triangles by updating the counts array
+struct countF {
+    vertex* V;
+    long* counts;
+    countF(vertex* _V, long* _counts) : V(_V), counts(_counts) {}
+    inline bool update (uintE s, uintE d) {
+        if (s > d)
+            writeAdd(&counts[s], countCommon<vertex>(V[s], V[d], s, d));
+        return 1;
+    }
+    inline bool cond (uintE d) { return true; }
+};
+
+// Main function for Triangle Counting
+template <class vertex>
+long TriangleCounting(graph<vertex>& GA) {
+    long n = GA.n;
+    vertex* V = GA.V;
+    long* counts = newA(long, n);
+    
+    // Initialize counts array and sort neighbors
+    vertexMap(Frontier, initF(V, counts));
+
+    // Apply edgeMap function to count triangles
+    edgeMap(GA, Frontier, countF(V, counts), -1, no_output);
+
+    // Sum up the counts to get the total number of triangles
+    long total = sequence::reduce(counts, n, addF<long>());
+    
+    // Clean up
+    free(counts);
+    
+    return total;
+}

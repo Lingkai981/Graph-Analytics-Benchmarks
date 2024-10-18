@@ -1,0 +1,49 @@
+#include "../core/api.h"
+
+// Assuming necessary types are already defined in the API, such as Graph, VSet, etc.
+
+struct SSSP_F {
+    float* distances;
+    SSSP_F(float* _distances) : distances(_distances) {}
+    bool operator()(int v) {
+        return distances[v] != INF;
+    }
+    void update(int v, float new_distance) {
+        distances[v] = new_distance;
+    }
+    bool cond(int v) const {
+        return true;
+    }
+};
+
+int main(int argc, char* argv[]) {
+    if (argc < 2) {
+        std::cerr << "Usage: " << argv[0] << " <input graph file>" << std::endl;
+        return 1;
+    }
+
+    // Load the graph
+    Graph<float> G;
+    G.load(argv[1]);
+
+    int src = 0; // Source vertex
+    float* distances = new float[G.num_vertices()];
+    std::fill(distances, distances + G.num_vertices(), INF);
+    distances[src] = 0;
+
+    SSSP_F sssp_f(distances);
+    VSet active_vertices = VSet::SingleVertexSet(src);
+
+    while (!active_vertices.isEmpty()) {
+        // edgeMapFunction chooses between sparse and dense edge processing based on vertex set size
+        active_vertices = G.edgeMapFunction(active_vertices, sssp_f, true);
+    }
+
+    // Output the distances
+    for (int i = 0; i < G.num_vertices(); ++i) {
+        std::cout << "Vertex " << i << ": " << distances[i] << std::endl;
+    }
+
+    delete[] distances;
+    return 0;
+}

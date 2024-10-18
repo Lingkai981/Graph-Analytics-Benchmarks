@@ -1,0 +1,77 @@
+#include <test.hpp>
+
+// Define the vertex data type
+struct vertex_data {
+  size_t count;
+  vertex_data() : count(0) {}
+  void save(graphlab::oarchive& oarc) const { oarc << count; }
+  void load(graphlab::iarchive& iarc) { iarc >> count; }
+};
+
+// Define the edge data type
+typedef graphlab::empty edge_data;
+
+// Define the graph type
+typedef graphlab::distributed_graph<vertex_data, edge_data> graph_type;
+
+// Define the vertex program
+class triangle_count_program : public graphlab::ivertex_program<graph_type, size_t> {
+public:
+  edge_dir_type gather_edges(icontext_type& context, const vertex_type& vertex) const override {
+    return graphlab::ALL_EDGES;
+  }
+
+  size_t gather(icontext_type& context, const vertex_type& vertex, edge_type& edge) const override {
+    return 1;
+  }
+
+  void apply(icontext_type& context, vertex_type& vertex, const gather_type& total) override {
+    vertex.data().count = total;
+  }
+
+  edge_dir_type scatter_edges(icontext_type& context, const vertex_type& vertex) const override {
+    return graphlab::OUT_EDGES;
+  }
+
+  void scatter(icontext_type& context, const vertex_type& vertex, edge_type& edge) const override {
+    // Scatter operation logic here
+  }
+};
+
+int main(int argc, char** argv) {
+  // Initialize control plain
+  graphlab::mpi_tools::init(argc, argv);
+  graphlab::distributed_control dc;
+
+  // Parse command line options
+  graphlab::command_line_options clopts("Triangle Counting");
+  std::string graph_dir;
+  clopts.attach_option("graph", graph_dir, "The graph file. Required.");
+  if(!clopts.parse(argc, argv) || graph_dir.empty()) {
+    std::cout << "Error in parsing command line arguments." << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  // Load the graph
+  graph_type graph(dc, clopts);
+  graph.load_format(graph_dir, "snap");
+  graph.finalize();
+
+  // Create the engine
+  graphlab::async_consistent_engine<triangle_count_program> engine(dc, graph, clopts);
+
+  // Signal all vertices to start
+  engine.signal_all();
+  engine.start();
+
+  // Output the results
+  size_t total_triangles = graph.map_reduce_vertices<size_t>([](const graph_type::vertex_type& vertex) {
+    return vertex.data().count;
+  });
+
+  dc.cout() << "Total number of triangles: " << total_triangles << std::endl;
+
+  // Finalize MPI
+  graphlab::mpi_tools::finalize();
+  return EXIT_SUCCESS;
+}

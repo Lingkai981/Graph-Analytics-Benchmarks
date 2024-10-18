@@ -1,0 +1,66 @@
+#include "../core/api.h"
+#include <iostream>
+
+// Define the map function for initializing vertices
+DefineMapV(INIT) {
+    v.val = 1.0 / n_vertex;
+    v.next = 0.0;
+    v.deg = deg(v);
+    return v;
+};
+
+// Define the map function for edge updates
+DefineMapE(UPDATE) {
+    d.next += 0.85 * s.val / s.deg;
+    return d;
+};
+
+// Define the map function for local vertex updates
+DefineMapV(LOCAL) {
+    v.val = v.next + 0.15 / n_vertex;
+    v.next = 0;
+    return v;
+};
+
+// Main function
+int main(int argc, char* argv[]) {
+    MPI_Init(&argc, &argv);
+
+    // Initialize the dataset
+    SetDataset("path/to/dataset", "path/to/additional/data");
+
+    // Number of iterations for the PageRank algorithm
+    int num_iterations = 10;
+
+    // Step 1: Initialize all vertices
+    VSet U = vertexMap(All, INIT);
+
+    // Step 2: Iterate for a fixed number of rounds
+    for (int i = 0; i < num_iterations; i++) {
+        std::cout << "Round " << i + 1 << std::endl;
+
+        // Step 3: Apply edgeMapDense to distribute values
+        U = edgeMapDenseFunction(All, U, EU, CTrueE, UPDATE, CTrueV);
+
+        // Step 4: Apply vertexMap to update vertex values
+        U = vertexMap(U, LOCAL);
+    }
+
+    // Step 5: Gather results
+    double max_val = -1;
+    double total_value = 0;
+
+    All.Gather([&](auto &v) {
+        if (v.val > max_val) max_val = v.val;
+        total_value += v.val;
+    });
+
+    // Step 6: Measure and display total processing time
+    double processing_time = GetTime();
+    std::cout << "Max Value: " << max_val << std::endl;
+    std::cout << "Total Value: " << total_value << std::endl;
+    std::cout << "Processing Time: " << processing_time << " seconds" << std::endl;
+
+    MPI_Finalize();
+    return 0;
+}

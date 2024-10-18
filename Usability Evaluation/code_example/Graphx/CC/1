@@ -1,0 +1,25 @@
+
+// Create a SparkContext
+val sc = new SparkContext("local", "ConnectedComponentExample")
+
+// Define an example social network dataset as an RDD of edges
+val edges: RDD[Edge[Int]] = sc.parallelize(Array(
+  Edge(1L, 2L, 1),
+  Edge(2L, 3L, 1),
+  Edge(3L, 4L, 1),
+  Edge(5L, 6L, 1)
+))
+
+// Create a graph from the edges
+val graph: Graph[Int, Int] = Graph.fromEdges(edges, defaultValue = 1)
+
+// Compute the connected components
+val connectedComponents = graph.connectedComponents().vertices
+
+// Collect and print the connected components
+connectedComponents.collect().foreach { case (vertexId, componentId) =>
+  println(s"Vertex $vertexId is in component $componentId")
+}
+
+// Stop the SparkContext
+sc.stop()

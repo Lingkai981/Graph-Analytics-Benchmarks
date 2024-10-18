@@ -1,0 +1,87 @@
+#include <test.hpp>
+
+// Define vertex data
+struct vertex_data {
+  float distance;
+  vertex_data(float d = std::numeric_limits<float>::max()) : distance(d) {}
+};
+
+// Define edge data
+struct edge_data {
+  float weight;
+  edge_data(float w = 1.0) : weight(w) {}
+};
+
+// Define the gather type
+typedef float gather_type;
+
+// Define the vertex program for SSSP
+class sssp_program : public graphlab::ivertex_program<graph_type, gather_type> {
+public:
+  float min_distance;
+
+  // Gather function
+  edge_dir_type gather_edges(icontext_type& context, const vertex_type& vertex) const {
+    return graphlab::IN_EDGES;
+  }
+
+  gather_type gather(icontext_type& context, const vertex_type& vertex, edge_type& edge) const {
+    return edge.source().data().distance + edge.data().weight;
+  }
+
+  // Apply function
+  void apply(icontext_type& context, vertex_type& vertex, const gather_type& total) {
+    min_distance = total;
+    if (vertex.data().distance > min_distance) {
+      vertex.data().distance = min_distance;
+      context.signal(vertex);
+    }
+  }
+
+  // Scatter function
+  edge_dir_type scatter_edges(icontext_type& context, const vertex_type& vertex) const {
+    return graphlab::OUT_EDGES;
+  }
+
+  void scatter(icontext_type& context, const vertex_type& vertex, edge_type& edge) const {
+    if (vertex.data().distance + edge.data().weight < edge.target().data().distance) {
+      context.signal(edge.target());
+    }
+  }
+};
+
+int main(int argc, char** argv) {
+  // Initialize MPI
+  graphlab::mpi_tools::init(argc, argv);
+  graphlab::distributed_control dc;
+
+  // Parse command line options
+  graphlab::command_line_options clopts("Single-Source Shortest Path algorithm.");
+  std::string graph_dir;
+  clopts.attach_option("graph", &graph_dir, graph_dir, "The graph file.");
+  if (!clopts.parse(argc, argv)) {
+    std::cout << "Error parsing arguments." << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  // Load the graph
+  graph_type graph(dc, clopts);
+  graph.load_structure(graph_dir, "tsv");
+  graph.finalize();
+  std::cout << "#vertices: " << graph.num_vertices() << " #edges: " << graph.num_edges() << std::endl;
+
+  // Initialize the engine
+  graphlab::async_consistent_engine<sssp_program> engine(dc, graph, clopts);
+
+  // Signal the source vertex
+  graphlab::vertex_id_type source_vertex = 0; // Change this to your source vertex ID
+  engine.signal(source_vertex);
+
+  // Run the engine
+  engine.start();
+  std::cout << "Runtime: " << engine.elapsed_seconds() << std::endl;
+
+  // Finalize MPI
+  graphlab::mpi_tools::finalize();
+  return EXIT_SUCCESS;
+}

@@ -1,0 +1,107 @@
+
+#include <test.hpp>
+#include <graphlab.hpp>
+
+// Define the vertex data
+struct vertex_data {
+  int degree;
+  int core;
+  vertex_data() : degree(0), core(0) {}
+};
+
+// Define the edge data
+typedef graphlab::empty edge_data;
+
+// Define the graph type
+typedef graphlab::distributed_graph<vertex_data, edge_data> graph_type;
+
+// Gather type for reducing the degree
+struct gather_type {
+  int degree;
+  gather_type() : degree(0) {}
+  gather_type& operator+=(const gather_type& other) {
+    degree += other.degree;
+    return *this;
+  }
+};
+
+// Vertex program for k-Core
+class k_core : public graphlab::ivertex_program<graph_type, gather_type> {
+public:
+  int k;
+
+  k_core(int k_value = 0) : k(k_value) {}
+
+  // Gather function to compute the degree
+  edge_dir_type gather_edges(icontext_type& context, const vertex_type& vertex) const {
+    return graphlab::ALL_EDGES;
+  }
+
+  // Gather function to accumulate the degree
+  gather_type gather(icontext_type& context, const vertex_type& vertex, edge_type& edge) const {
+    gather_type gather;
+    gather.degree = 1; // Each edge contributes a degree of 1
+    return gather;
+  }
+
+  // Apply function to update the vertex data
+  void apply(icontext_type& context, vertex_type& vertex, const gather_type& total) {
+    vertex.data().degree = total.degree;
+    if (vertex.data().degree < k) {
+      vertex.data().core = 0; // Not part of k-core
+    } else {
+      vertex.data().core = k; // Part of k-core
+    }
+  }
+
+  // Scatter function to signal neighbors
+  edge_dir_type scatter_edges(icontext_type& context, const vertex_type& vertex) const {
+    return graphlab::ALL_EDGES;
+  }
+
+  // Scatter function to update neighbors
+  void scatter(icontext_type& context, const vertex_type& vertex, edge_type& edge) const {
+    if (vertex.data().degree < k) {
+      context.signal(edge.target());
+      context.signal(edge.source());
+    }
+  }
+};
+
+int main(int argc, char** argv) {
+  // Initialize control
+  graphlab::mpi_tools::init(argc, argv);
+  graphlab::distributed_control dc;
+
+  // Parse command line options
+  graphlab::command_line_options clopts("k-Core algorithm");
+  std::string graph_dir;
+  clopts.attach_option("graph", graph_dir, "The graph file");
+  int k = 3;
+  clopts.attach_option("k", k, "The k value for k-Core");
+  if (!clopts.parse(argc, argv)) {
+    dc.cout() << "Error in parsing command line arguments." << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  // Load the graph
+  graph_type graph(dc);
+  graph.load(graph_dir, graphlab::distributed_graph_loader<graph_type>::edge_list_loader);
+  graph.finalize();
+
+  // Create the engine
+  graphlab::async_consistent_engine<k_core> engine(dc, graph, clopts);
+
+  // Signal all vertices to start the algorithm
+  engine.signal_all();
+
+  // Run the engine
+  engine.start();
+
+  // Save the results
+  graph.save("kcore_output", graphlab::vertex_writer<graph_type>(), false, true, false);
+
+  // Finalize MPI
+  graphlab::mpi_tools::finalize();
+  return EXIT_SUCCESS;
+}

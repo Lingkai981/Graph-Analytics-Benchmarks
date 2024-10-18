@@ -1,0 +1,93 @@
+#include <test/test.h>
+
+namespace test {
+
+template <typename FRAG_T>
+class PageRankContext : public VertexDataContext<FRAG_T> {
+ public:
+  explicit PageRankContext(const FRAG_T& fragment)
+      : VertexDataContext<FRAG_T>(fragment), pagerank(this->data()) {}
+
+  void Init(BatchShuffleMessageManager& messages, double delta, int max_round) {
+    this->delta = delta;
+    this->max_round = max_round;
+    auto vertices = this->fragment.Vertices();
+    for (auto v : vertices) {
+      pagerank[v] = 1.0;
+    }
+  }
+
+  void Output(std::ostream& os) override {
+    auto vertices = this->fragment.Vertices();
+    for (auto v : vertices) {
+      os << "Vertex " << v << ": " << pagerank[v] << std::endl;
+    }
+  }
+
+  double delta;
+  int max_round;
+  typename FRAG_T::template vertex_array_t<double> pagerank;
+};
+
+template <typename FRAG_T>
+class PageRank : public BatchShuffleAppBase<FRAG_T, PageRankContext<FRAG_T>>,
+                 public ParallelEngine,
+                 public Communicator {
+ public:
+  INSTALL_DEFAULT_WORKER(PageRank<FRAG_T>, PageRankContext<FRAG_T>, FRAG_T)
+
+  void PEval(const fragment_t& frag, context_t& ctx, message_manager_t& messages) {
+    auto vertices = frag.Vertices();
+    for (auto v : vertices) {
+      if (frag.IsInnerVertex(v)) {
+        double rank = 1.0 / frag.GetTotalVerticesNum();
+        ctx.pagerank[v] = rank;
+      }
+    }
+    messages.ForceContinue();
+  }
+
+  void IncEval(const fragment_t& frag, context_t& ctx, message_manager_t& messages) {
+    auto vertices = frag.Vertices();
+    for (auto v : vertices) {
+      if (frag.IsInnerVertex(v)) {
+        double rank_sum = 0.0;
+        auto oes = frag.GetOutgoingAdjList(v);
+        for (auto& e : oes) {
+          rank_sum += ctx.pagerank[e.get_neighbor()];
+        }
+        ctx.pagerank[v] = ctx.delta * rank_sum + (1.0 - ctx.delta) / frag.GetTotalVerticesNum();
+      }
+    }
+
+    if (ctx.max_round > 0) {
+      --ctx.max_round;
+      messages.ForceContinue();
+    }
+  }
+};
+
+}  // namespace test
+
+int main(int argc, char** argv) {
+  // Initialize the GRAPE platform
+  grape::InitMPIComm();
+  {
+    // Assume fragment and message_manager are properly initialized
+    test::PageRankContext<FRAG_T> ctx(fragment);
+    double delta = 0.85;
+    int max_round = 10;
+    ctx.Init(message_manager, delta, max_round);
+
+    test::PageRank<FRAG_T> pagerank;
+    pagerank.PEval(fragment, ctx, message_manager);
+
+    for (int i = 0; i < max_round; ++i) {
+      pagerank.IncEval(fragment, ctx, message_manager);
+    }
+
+    ctx.Output(std::cout);
+  }
+  grape::FinalizeMPIComm();
+  return 0;
+}

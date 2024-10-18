@@ -1,0 +1,75 @@
+#include <test/test.h>
+
+namespace test {
+
+// Define the SSSP context
+template <typename FRAG_T>
+class SSSPContext : public VertexDataContext<FRAG_T, double> {
+public:
+  using fragment_t = FRAG_T;
+  using vertex_t = typename fragment_t::vertex_t;
+
+  void Init(FRAG_T& frag, parallel_engine_t& engine, message_manager_t& messages) override {
+    auto vertices = frag.Vertices();
+    for (auto v : vertices) {
+      this->data_[v] = std::numeric_limits<double>::max();
+    }
+    if (frag.IsInnerVertex(source)) {
+      this->data_[source] = 0.0;
+    }
+  }
+
+  void Finalize() override {
+    // Any necessary cleanup can be done here
+  }
+
+  vertex_t source;
+};
+
+// Define the SSSP application
+template <typename FRAG_T>
+class SSSP : public ParallelAppBase<SSSP<FRAG_T>> {
+public:
+  INSTALL_PARALLEL_WORKER(SSSP<FRAG_T>, SSSPContext<FRAG_T>, FRAG_T)
+  
+  using context_t = SSSPContext<FRAG_T>;
+  using vertex_t = typename FRAG_T::vertex_t;
+
+  void PEval(const FRAG_T& frag, context_t& ctx, message_manager_t& messages) {
+    auto vertices = frag.Vertices();
+    for (auto v : vertices) {
+      if (ctx.data_[v] == 0.0) {
+        auto oes = frag.GetOutgoingAdjList(v);
+        for (auto& e : oes) {
+          auto u = e.neighbor;
+          double new_dist = ctx.data_[v] + e.data;
+          if (new_dist < ctx.data_[u]) {
+            ctx.data_[u] = new_dist;
+            messages.SendMsgThroughOEdges(frag, v, new_dist);
+          }
+        }
+      }
+    }
+  }
+
+  void IncEval(const FRAG_T& frag, context_t& ctx, message_manager_t& messages) {
+    vertex_t v;
+    double received_dist;
+    while (messages.GetMessage(v, received_dist)) {
+      if (received_dist < ctx.data_[v]) {
+        ctx.data_[v] = received_dist;
+        auto oes = frag.GetOutgoingAdjList(v);
+        for (auto& e : oes) {
+          auto u = e.neighbor;
+          double new_dist = ctx.data_[v] + e.data;
+          if (new_dist < ctx.data_[u]) {
+            ctx.data_[u] = new_dist;
+            messages.SendMsgThroughOEdges(frag, v, new_dist);
+          }
+        }
+      }
+    }
+  }
+};
+
+}  // namespace test

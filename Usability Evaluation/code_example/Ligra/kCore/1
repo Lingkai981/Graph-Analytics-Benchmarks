@@ -1,0 +1,82 @@
+#include "test.h"
+#include <queue>
+#include <vector>
+#include <algorithm>
+
+// BFS算法的实现
+void BFS(Graph &G, int start) {
+    std::vector<bool> visited(G.numVertices, false);
+    std::queue<int> q;
+    q.push(start);
+    visited[start] = true;
+
+    while (!q.empty()) {
+        int v = q.front();
+        q.pop();
+        std::cout << "Visited: " << v << std::endl;
+
+        for (int u : G.neighbors(v)) {
+            if (!visited[u]) {
+                visited[u] = true;
+                q.push(u);
+            }
+        }
+    }
+}
+
+// k-Core算法的实现
+void kCore(Graph &G, int k) {
+    int V = G.numVertices;
+    std::vector<int> degree(V);
+    std::vector<bool> processed(V, false);
+    std::queue<int> q;
+
+    // 初始化每个顶点的度数
+    for (int i = 0; i < V; ++i) {
+        degree[i] = G.degree(i);
+        if (degree[i] < k) {
+            q.push(i);
+            processed[i] = true;
+        }
+    }
+
+    // 删除度数小于k的顶点
+    while (!q.empty()) {
+        int v = q.front();
+        q.pop();
+
+        for (int u : G.neighbors(v)) {
+            if (!processed[u]) {
+                degree[u]--;
+                if (degree[u] < k) {
+                    q.push(u);
+                    processed[u] = true;
+                }
+            }
+        }
+    }
+
+    // 输出k-Core
+    for (int i = 0; i < V; ++i) {
+        if (!processed[i]) {
+            std::cout << "Vertex " << i << " is part of the k-Core" << std::endl;
+        }
+    }
+}
+
+int main() {
+    // 创建图的实例
+    Graph G;
+
+    // 初始化图（这里需要根据具体情况添加节点和边）
+    // 例如：G.addEdge(0, 1); G.addEdge(1, 2); 等
+
+    // 执行BFS算法
+    BFS(G, 0);
+
+    // 执行k-Core算法
+    int k = 3; // 设定k值
+    kCore(G, k);
+
+    return 0;
+}

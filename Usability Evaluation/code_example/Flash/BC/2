@@ -1,0 +1,84 @@
+#include "../core/api.h"
+
+// Function to initialize the distances
+void initializeDistances(Graph<int>& G, vertexSubset& U) {
+    vertexSubset init_U = VERTEXMAP(U, [&](int v) {
+        G.dist[v] = (v == U[0].id) ? 0 : std::numeric_limits<int>::max();
+        return G.dist[v];
+    });
+}
+
+// Function to perform the betweenness centrality
+vertexSubset betweennessCentrality(Graph<int>& G, vertexSubset& sources) {
+    // Initialize distances
+    initializeDistances(G, sources);
+
+    // Vector to store dependencies
+    std::vector<double> dependencies(G.numVertices(), 0.0);
+
+    // Vector to store the number of shortest paths
+    std::vector<int> numShortestPaths(G.numVertices(), 0);
+    numShortestPaths[sources[0].id] = 1;
+
+    // Vector for pendant nodes
+    std::vector<int> pendantNodes(G.numVertices(), -1);
+
+    // Queue for BFS
+    std::queue<int> bfsQueue;
+    bfsQueue.push(sources[0].id);
+
+    while (!bfsQueue.empty()) {
+        int current = bfsQueue.front();
+        bfsQueue.pop();
+
+        // Apply edgeMapFunction to process all edges
+        vertexSubset neighbors = EDGEMAP(G, current, [&](int u, int v) {
+            bool condition = (G.dist[u] + 1 == G.dist[v]);
+            if (!condition && (G.dist[v] > G.dist[u] + 1)) {
+                G.dist[v] = G.dist[u] + 1;
+                numShortestPaths[v] = numShortestPaths[u];
+                bfsQueue.push(v);
+            } else if (condition) {
+                numShortestPaths[v] += numShortestPaths[u];
+            }
+            return G.dist[v];
+        });
+
+        // Backward accumulate dependencies
+        neighbors.apply([&](int v) {
+            if (pendantNodes[v] == -1) {
+                double delta = (1.0 + dependencies[v]) / numShortestPaths[v];
+                for (auto predecessor : G.predecessors(v)) {
+                    dependencies[predecessor] += numShortestPaths[predecessor] * delta;
+                }
+            }
+        });
+
+        pendantNodes[current] = 1;
+    }
+
+    // Normalize dependencies
+    for (int v = 0; v < G.numVertices(); v++) {
+        dependencies[v] /= (G.numVertices() - 1) * (G.numVertices() - 2);
+    }
+
+    return vertexSubset(G.numVertices(), dependencies);
+}
+
+int main() {
+    // Example usage
+    Graph<int> G;
+    vertexSubset sources;
+    G.loadGraph("path/to/graph");
+
+    // Initialize sources vertexSubset
+    sources.addElement({0}); // Assuming source vertex ID to be 0
+
+    // Compute betweenness centrality
+    vertexSubset result = betweennessCentrality(G, sources);
+
+    // Output results
+    result.print();
+
+    return 0;
+}

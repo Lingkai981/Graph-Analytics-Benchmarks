@@ -1,0 +1,52 @@
+
+#include "../core/api.h"
+
+// Function to trim vertices with degree less than k
+vertexSubset trim_vertices(graph &G, vertexSubset &vs, int k) {
+    // Using EDGE_MAP function to mark vertices with degree less than k
+    return EDGEMAP(vs, G, [&] (int src, int dst) {
+        return (vs.degree(src) >= k) && (vs.degree(dst) >= k);
+    });
+}
+
+// Function for k-Core decomposition
+vertexSubset k_core(graph &G, int k) {
+    // Initialize all vertices as part of k-core
+    vertexSubset kCore(VERTEXMAP(G, [&] (int v) {
+        return true;
+    }));
+
+    vertexSubset current_kCore = kCore;
+    vertexSubset updated_kCore;
+
+    do {
+        // Trim vertices with degree less than k
+        updated_kCore = trim_vertices(G, current_kCore, k);
+
+        // If no changes, break the loop
+        if (updated_kCore == current_kCore) {
+            break;
+        }
+
+        // Update the current core set
+        current_kCore = updated_kCore;
+    } while(true);
+
+    return current_kCore;
+}
+
+int main() {
+    // Load your distributed graph G here
+    graph G = loadGraph("path_to_your_graph_data");
+
+    // Define the value of k
+    int k = 3;  // Example value, adjust as needed
+
+    // Compute the k-Core
+    vertexSubset kCore = k_core(G, k);
+
+    // Output or process kCore as needed
+    kCore.print();
+
+    return 0;
+}

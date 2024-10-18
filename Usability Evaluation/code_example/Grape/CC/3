@@ -1,0 +1,101 @@
+#include <test/test.h>
+
+using namespace test;
+
+// Define the context class
+template <typename FRAG_T>
+class WCCContext : public VertexDataContext<FRAG_T, typename FRAG_T::vertex_t> {
+public:
+    using vertex_t = typename FRAG_T::vertex_t;
+
+    WCCContext(const FRAG_T& fragment)
+        : VertexDataContext<FRAG_T, vertex_t>(fragment) {}
+
+    void Init(const FRAG_T& frag, parallel_engine_t& engine, message_manager_t& messages) override {
+        auto vertices = frag.Vertices();
+        for (auto v : vertices) {
+            this->data_[v] = frag.GetId(v); // Initialize each vertex with its own ID
+        }
+    }
+
+    void Finalize() override {
+        // Custom cleanup code if necessary
+    }
+};
+
+// Define the application class
+template <typename FRAG_T>
+class WCC : public ParallelAppBase<WCC<FRAG_T>> {
+public:
+    using vertex_t = typename FRAG_T::vertex_t;
+    using context_t = WCCContext<FRAG_T>;
+    using message_manager_t = ParallelMessageManager;
+
+    void PEval(const FRAG_T& frag, context_t& ctx, message_manager_t& messages) override {
+        auto vertices = frag.Vertices();
+        for (auto v : vertices) {
+            auto neighbors = frag.GetOutgoingAdjList(v);
+            for (auto& e : neighbors) {
+                vertex_t u = e.get_neighbor();
+                if (ctx.data_[v] < ctx.data_[u]) {
+                    ctx.data_[u] = ctx.data_[v];
+                    messages.SendMsgThroughOEdges(frag, u, ctx.data_[u]);
+                }
+            }
+        }
+        messages.ForceContinue(); // Ensure IncEval is called
+    }
+
+    void IncEval(const FRAG_T& frag, context_t& ctx, message_manager_t& messages) override {
+        messages.ParallelProcess<vertex_t, typename FRAG_T::vid_t>(
+            frag, [&ctx](int tid, vertex_t v, typename FRAG_T::vid_t msg) {
+                if (ctx.data_[v] > msg) {
+                    ctx.data_[v] = msg;
+                    return true;
+                }
+                return false;
+            },
+            [&frag, &ctx, &messages](int tid, vertex_t v) {
+                auto neighbors = frag.GetOutgoingAdjList(v);
+                for (auto& e : neighbors) {
+                    vertex_t u = e.get_neighbor();
+                    if (ctx.data_[v] < ctx.data_[u]) {
+                        ctx.data_[u] = ctx.data_[v];
+                        messages.SendMsgThroughOEdges(frag, u, ctx.data_[u]);
+                    }
+                }
+            });
+    }
+};
+
+// Main function to run the WCC algorithm
+int main(int argc, char** argv) {
+    // Initialize the GRAPE platform
+    InitGRAPE(argc, argv);
+
+    // Create fragment, context, and message manager
+    MyFragment fragment;
+    WCCContext<MyFragment> context(fragment);
+    ParallelMessageManager messages;
+
+    // Initialize message manager
+    messages.InitChannels(4); // Initialize with 4 threads
+    messages.Start();         // Start the message manager
+
+    // Create and run the WCC application
+    WCC<MyFragment> app;
+    app.PEval(fragment, context, messages);
+
+    while (messages.HasMessages()) {
+        app.IncEval(fragment, context, messages);
+    }
+
+    // Finalize the context and message manager
+    context.Finalize();
+    messages.Stop(); // Stop the message manager
+
+    // Finalize the GRAPE platform
+    FinalizeGRAPE();
+
+    return 0;
+}

@@ -1,0 +1,119 @@
+
+#include <test.hpp>
+#include <graphlab.hpp>
+
+// Constants
+const double RESET_PROB = 0.15;
+const int ITERATIONS = 10;
+const bool USE_DELTA_CACHE = true;
+const double TOLERANCE = 1e-5;
+
+// Vertex data structure
+struct vertex_data {
+  double data;
+  int num_out_edges;
+};
+
+// Edge data structure
+struct edge_data {};
+
+// Initialize vertex function
+void init_vertex(graphlab::distributed_control &dc, graphlab::distributed_graph<vertex_data, edge_data> &graph) {
+  graph.transform_vertices([](vertex_data& vertex) {
+    vertex.data = 1.0;
+  });
+}
+
+// Gather function
+double gather(const graphlab::distributed_graph<vertex_data, edge_data>::vertex_type& vertex, const graphlab::distributed_graph<vertex_data, edge_data>::edge_type& edge) {
+  return edge.source().data / edge.source().num_out_edges;
+}
+
+// Apply function
+void apply(graphlab::distributed_graph<vertex_data, edge_data>::vertex_type& vertex, const double& total) {
+  double newval = (1.0 - RESET_PROB) * total + RESET_PROB;
+  double last_change = newval - vertex.data;
+  vertex.data = newval;
+
+  if (ITERATIONS) {
+    vertex.context().signal(vertex);
+  }
+
+  if (USE_DELTA_CACHE) {
+    vertex.context().post_delta(vertex, last_change);
+  }
+
+  if (fabs(last_change) > TOLERANCE) {
+    vertex.context().signal(vertex);
+  }
+}
+
+// Scatter function
+void scatter(const graphlab::distributed_graph<vertex_data, edge_data>::vertex_type& vertex, const graphlab::distributed_graph<vertex_data, edge_data>::edge_type& edge) {
+  if (USE_DELTA_CACHE) {
+    vertex.context().post_delta(edge.target(), vertex.data);
+  }
+
+  if (fabs(vertex.data) > TOLERANCE) {
+    vertex.context().signal(edge.target());
+  }
+}
+
+// Main function
+int main(int argc, char** argv) {
+  // Initialize MPI and distributed control
+  graphlab::mpi_tools::init(argc, argv);
+  graphlab::distributed_control dc;
+
+  // Parse command line options
+  graphlab::command_line_options clopts("PageRank algorithm.");
+  std::string graph_dir;
+  clopts.attach_option("graph", graph_dir, "", "The graph file.");
+  if (!clopts.parse(argc, argv)) {
+    std::cout << "Error parsing arguments." << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  // Build and finalize the graph
+  graphlab::distributed_graph<vertex_data, edge_data> graph(dc, clopts);
+  graph.load_format(graph_dir, "snap");
+  graph.finalize();
+
+  // Initialize vertex data
+  init_vertex(dc, graph);
+
+  // Create and configure engine
+  graphlab::omni_engine<graphlab::ivertex_program<graphlab::distributed_graph<vertex_data, edge_data>, double>> engine(dc, graph, "async", clopts);
+  engine.signal_all();
+
+  // Start the engine
+  engine.start();
+
+  // Print runtime
+  const double runtime = engine.elapsed_seconds();
+  std::cout << "Finished running engine in " << runtime << " seconds." << std::endl;
+
+  // Compute total rank
+  double total_rank = graph.map_reduce_vertices<double>([](const graphlab::distributed_graph<vertex_data, edge_data>::vertex_type& vertex) {
+    return vertex.data;
+  });
+  std::cout << "Total rank: " << total_rank << std::endl;
+
+  // Save the final graph if needed
+  std::string saveprefix;
+  if (!saveprefix.empty()) {
+    graph.save(saveprefix, [](const graphlab::distributed_graph<vertex_data, edge_data>::vertex_type& vertex) {
+      return std::to_string(vertex.data);
+    }, false, true, false);
+  }
+
+  // Compute total PageRank
+  double totalpr = graph.map_reduce_vertices<double>([](const graphlab::distributed_graph<vertex_data, edge_data>::vertex_type& vertex) {
+    return vertex.data;
+  });
+  std::cout << "Totalpr = " << totalpr << std::endl;
+
+  // Finalize MPI
+  graphlab::mpi_tools::finalize();
+  return EXIT_SUCCESS;
+}

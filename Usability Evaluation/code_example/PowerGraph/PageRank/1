@@ -1,0 +1,102 @@
+
+#include <test.hpp>
+#include <graphlab.hpp>
+
+// Define the vertex data type
+struct vertex_data {
+    double pagerank;
+    vertex_data() : pagerank(1.0) {}
+    void save(graphlab::oarchive& oarc) const {
+        oarc << pagerank;
+    }
+    void load(graphlab::iarchive& iarc) {
+        iarc >> pagerank;
+    }
+};
+
+// Define the edge data type
+typedef graphlab::empty edge_data;
+
+// Gather type to accumulate the PageRank contributions from neighbors
+struct gather_type {
+    double pagerank_sum;
+    gather_type() : pagerank_sum(0) {}
+    gather_type& operator+=(const gather_type& other) {
+        pagerank_sum += other.pagerank_sum;
+        return *this;
+    }
+    void save(graphlab::oarchive& oarc) const {
+        oarc << pagerank_sum;
+    }
+    void load(graphlab::iarchive& iarc) {
+        iarc >> pagerank_sum;
+    }
+};
+
+// Define the PageRank update function
+class pagerank_program : public graphlab::ivertex_program<graphlab::distributed_graph<vertex_data, edge_data>, gather_type> {
+public:
+    double damping_factor;
+    double threshold;
+
+    pagerank_program(double damping_factor = 0.85, double threshold = 1e-5)
+        : damping_factor(damping_factor), threshold(threshold) {}
+
+    edge_dir_type gather_edges(icontext_type& context, const vertex_type& vertex) const {
+        return graphlab::IN_EDGES;
+    }
+
+    gather_type gather(icontext_type& context, const vertex_type& vertex, edge_type& edge) const {
+        gather_type result;
+        result.pagerank_sum = edge.source().data().pagerank / edge.source().num_out_edges();
+        return result;
+    }
+
+    void apply(icontext_type& context, vertex_type& vertex, const gather_type& total) {
+        double new_pagerank = (1.0 - damping_factor) + damping_factor * total.pagerank_sum;
+        if (std::fabs(new_pagerank - vertex.data().pagerank) > threshold) {
+            context.signal(vertex);
+        }
+        vertex.data().pagerank = new_pagerank;
+    }
+
+    edge_dir_type scatter_edges(icontext_type& context, const vertex_type& vertex) const {
+        return graphlab::NO_EDGES;
+    }
+};
+
+int main(int argc, char** argv) {
+    // Initialize control plain with mpi
+    graphlab::mpi_tools::init(argc, argv);
+    graphlab::distributed_control dc;
+
+    // Parse command line options
+    graphlab::command_line_options clopts("PageRank Algorithm");
+    std::string graph_dir;
+    clopts.attach_option("graph", graph_dir, "The directory containing the graph data.");
+
+    if (!clopts.parse(argc, argv)) {
+        dc.cout() << "Error in parsing command line arguments." << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    // Load the graph
+    graphlab::distributed_graph<vertex_data, edge_data> graph(dc, clopts);
+    graph.load(graph_dir, graphlab::graph_loader::edge_list_loader);
+
+    // Finalize the graph
+    graph.finalize();
+
+    // Initialize the PageRank algorithm
+    pagerank_program prg;
+    graphlab::omni_engine<pagerank_program> engine(dc, graph, "sync", clopts);
+    engine.signal_all();
+    engine.start();
+
+    // Save the final graph
+    graph.save("pagerank_results", graphlab::graph_writer::save_vertex_data);
+
+    // Finalize mpi
+    graphlab::mpi_tools::finalize();
+    return EXIT_SUCCESS;
+}

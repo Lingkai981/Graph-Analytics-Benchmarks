@@ -1,0 +1,85 @@
+#include "test.h"
+
+// Define the vertex map function for initializing the component IDs
+struct Init {
+    int* component_ids;
+    Init(int* _component_ids) : component_ids(_component_ids) {}
+
+    bool operator()(int v) {
+        component_ids[v] = v;
+        return true;
+    }
+};
+
+// Define the edge map function for updating the component IDs
+struct Update {
+    int* component_ids;
+    Update(int* _component_ids) : component_ids(_component_ids) {}
+
+    bool update(int s, int d) {
+        int src_comp = component_ids[s];
+        int dst_comp = component_ids[d];
+        if (src_comp < dst_comp) {
+            component_ids[d] = src_comp;
+            return true;
+        }
+        return false;
+    }
+
+    bool updateAtomic(int s, int d) {
+        int src_comp = component_ids[s];
+        int dst_comp = component_ids[d];
+        return (src_comp < dst_comp) && (CAS(&component_ids[d], dst_comp, src_comp));
+    }
+
+    bool cond(int d) {
+        return true;
+    }
+};
+
+// Define the vertex map function for checking if the component IDs have stabilized
+struct Check {
+    int* component_ids;
+    bool* changed;
+    Check(int* _component_ids, bool* _changed) : component_ids(_component_ids), changed(_changed) {}
+
+    bool operator()(int v) {
+        if (component_ids[v] != v) {
+            *changed = true;
+        }
+        return true;
+    }
+};
+
+void ConnectedComponents(Graph& G) {
+    int n = G.numVertices();
+    int* component_ids = new int[n];
+    bool changed = true;
+
+    // Initialize component IDs
+    vertexMap(G, Init(component_ids));
+
+    // Iteratively update component IDs until they stabilize
+    while (changed) {
+        changed = false;
+        edgeMap(G, Update(component_ids));
+        vertexMap(G, Check(component_ids, &changed));
+    }
+
+    // Output the component IDs
+    for (int i = 0; i < n; i++) {
+        std::cout << "Vertex " << i << " is in component " << component_ids[i] << std::endl;
+    }
+
+    delete[] component_ids;
+}
+
+int main() {
+    // Load or construct your graph here
+    Graph G = /* your graph initialization code */;
+
+    // Run the Connected Components algorithm
+    ConnectedComponents(G);
+
+    return 0;
+}

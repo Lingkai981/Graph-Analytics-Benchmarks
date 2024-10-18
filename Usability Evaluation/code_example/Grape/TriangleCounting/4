@@ -1,0 +1,157 @@
+#include <test/test.h>
+
+template <typename FRAG_T>
+class TriangleCountContext : public VertexDataContext<FRAG_T, int> {
+public:
+  using fragment_t = FRAG_T;
+  using vertex_t = typename fragment_t::vertex_t;
+
+  void Init(FRAG_T& frag, parallel_engine_t& engine, message_manager_t& messages) override {
+    auto inner_vertices = frag.InnerVertices();
+    global_degree.Init(inner_vertices.size());
+    complete_neighbor.Init(inner_vertices.size());
+    tricnt.Init(inner_vertices.size());
+    stage = 0;
+    messages.InitChannels(thread_num());
+  }
+
+  void Finalize() override {
+    // Any cleanup if necessary
+  }
+
+  VertexArray<int> global_degree;
+  VertexArray<std::vector<vertex_t>> complete_neighbor;
+  VertexArray<int> tricnt;
+  int stage;
+};
+
+template <typename FRAG_T>
+class TriangleCount : public ParallelAppBase<TriangleCount<FRAG_T>> {
+public:
+  INSTALL_PARALLEL_WORKER(TriangleCount<FRAG_T>, TriangleCountContext<FRAG_T>, FRAG_T);
+  
+  void PEval(const fragment_t& frag, context_t& ctx, message_manager_t& messages) override {
+    auto inner_vertices = frag.InnerVertices();
+    for (auto v : inner_vertices) {
+      ctx.global_degree[v] = frag.GetLocalOutDegree(v);
+      messages.SendMsgThroughOEdges<fragment_t, int>(frag, v, ctx.global_degree[v], thread_id());
+    }
+    messages.ForceContinue();
+  }
+
+  void IncEval(const fragment_t& frag, context_t& ctx, message_manager_t& messages) override {
+    auto inner_vertices = frag.InnerVertices();
+    auto outer_vertices = frag.OuterVertices();
+
+    if (ctx.stage == 0) {
+      ctx.stage = 1;
+      messages.ParallelProcess<fragment_t, int>(thread_num(), frag,
+        [&ctx](int tid, vertex_t u, int msg) { ctx.global_degree[u] = msg; });
+
+      for (auto v : inner_vertices) {
+        std::vector<vertex_t>& neighbor_vector = ctx.complete_neighbor[v];
+        int degree = ctx.global_degree[v];
+        neighbor_vector.reserve(degree);
+
+        auto outgoing_edges = frag.GetOutgoingAdjList(v);
+        std::vector<int> message_vector;
+        for (auto& e : outgoing_edges) {
+          auto neighbor = e.get_neighbor();
+          if (ctx.global_degree[neighbor] < ctx.global_degree[v]) {
+            neighbor_vector.push_back(neighbor);
+            message_vector.push_back(frag.Vertex2Gid(neighbor));
+          } else if (ctx.global_degree[neighbor] == ctx.global_degree[v]) {
+            auto neighbor_gid = frag.Vertex2Gid(neighbor);
+            auto vertex_gid = frag.GetInnerVertexGid(v);
+            if (vertex_gid > neighbor_gid) {
+              neighbor_vector.push_back(neighbor);
+              message_vector.push_back(neighbor_gid);
+            }
+          }
+        }
+        messages.SendMsgThroughOEdges<fragment_t, std::vector<int>>(frag, v, message_vector, thread_id());
+      }
+      messages.ForceContinue();
+    } else if (ctx.stage == 1) {
+      ctx.stage = 2;
+      messages.ParallelProcess<fragment_t, std::vector<int>>(thread_num(), frag,
+        [&ctx](int tid, vertex_t u, std::vector<int> msg) {
+          for (auto gid : msg) {
+            auto vertex = frag.Gid2Vertex(gid);
+            if (vertex.IsValid()) {
+              ctx.complete_neighbor[u].push_back(vertex);
+            }
+          }
+        });
+
+      std::vector<std::unordered_set<vertex_t>> vertex_sets(thread_num());
+      for (auto v : inner_vertices) {
+        auto& nbr_set = vertex_sets[thread_id()];
+        auto& nbr_vector = ctx.complete_neighbor[v];
+        for (auto u : nbr_vector) {
+          nbr_set.insert(u);
+        }
+        for (auto u : nbr_vector) {
+          for (auto w : ctx.complete_neighbor[u]) {
+            if (nbr_set.find(w) != nbr_set.end()) {
+              ctx.tricnt[u]++;
+              ctx.tricnt[v]++;
+              ctx.tricnt[w]++;
+            }
+          }
+        }
+        for (auto u : nbr_vector) {
+          nbr_set.erase(u);
+        }
+      }
+
+      for (auto v : outer_vertices) {
+        if (ctx.tricnt[v] != 0) {
+          messages.SyncStateOnOuterVertex<fragment_t, int>(frag, v, ctx.tricnt[v]);
+        }
+      }
+      messages.ForceContinue();
+    } else if (ctx.stage == 2) {
+      ctx.stage = 3;
+      messages.ParallelProcess<fragment_t, int>(thread_num(), frag,
+        [&ctx](int tid, vertex_t u, int deg) {
+          ctx.tricnt[u] += deg;
+        });
+
+      for (auto v : inner_vertices) {
+        ctx.data[v] = ctx.tricnt[v] / 3;
+      }
+    }
+  }
+};
+
+int main(int argc, char** argv) {
+  grape::InitMPIComm();
+  {
+    grape::CommSpec comm_spec;
+    comm_spec.Init(MPI_COMM_WORLD);
+    if (argc < 2) {
+      LOG(ERROR) << "Usage: " << argv[0] << " <efile>";
+      return 1;
+    }
+    std::string efile = argv[1];
+    grape::LoadGraph<fragment_t>(efile, comm_spec, [&](const fragment_t& frag) {
+      DefaultMessageManager messages;
+      TriangleCountContext<fragment_t> ctx;
+      TriangleCount<fragment_t> app;
+      ctx.Init(frag, grape::DefaultParallelEngine(), messages);
+      app.Init(frag, ctx, messages);
+      app.PEval(frag, ctx, messages);
+      while (!messages.Finished()) {
+        app.IncEval(frag, ctx, messages);
+      }
+      ctx.Finalize();
+      auto inner_vertices = frag.InnerVertices();
+      for (auto v : inner_vertices) {
+        std::cout << frag.GetId(v) << " " << ctx.data[v] << std::endl;
+      }
+    });
+  }
+  grape::FinalizeMPIComm();
+  return 0;
+}

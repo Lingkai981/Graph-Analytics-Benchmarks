@@ -1,0 +1,86 @@
+#include "test.h"
+
+// Define the PageRank update functor for edges
+struct PR_F {
+    double* p_curr;
+    double* p_next;
+    vertex* V;
+
+    PR_F(double* _p_curr, double* _p_next, vertex* _V) 
+        : p_curr(_p_curr), p_next(_p_next), V(_V) {}
+
+    inline bool update(uintE s, uintE d) {
+        p_next[d] += p_curr[s] / V[s].getOutDegree();
+        return true;
+    }
+
+    inline bool updateAtomic(uintE s, uintE d) {
+        __sync_fetch_and_add(&p_next[d], p_curr[s] / V[s].getOutDegree());
+        return true;
+    }
+
+    inline bool cond(intT d) {
+        return true;
+    }
+};
+
+// Define the PageRank update functor for vertices
+struct PR_Vertex_F {
+    double damping;
+    double addedConstant;
+    double* p_curr;
+    double* p_next;
+
+    PR_Vertex_F(double* _p_curr, double* _p_next, double _damping, double _addedConstant) 
+        : p_curr(_p_curr), p_next(_p_next), damping(_damping), addedConstant(_addedConstant) {}
+
+    inline bool operator()(uintE i) {
+        p_next[i] = damping * p_next[i] + addedConstant;
+        return true;
+    }
+};
+
+// Define the PageRank reset functor for vertices
+struct PR_Vertex_Reset {
+    double* p_curr;
+
+    PR_Vertex_Reset(double* _p_curr) : p_curr(_p_curr) {}
+
+    inline bool operator()(uintE i) {
+        p_curr[i] = 0.0;
+        return true;
+    }
+};
+
+// PageRank algorithm implementation
+void PageRank(graph<vertex>& GA, int max_iters = 20, double damping = 0.85) {
+    int n = GA.n;
+    double one_over_n = 1.0 / n;
+    double* p_curr = new double[n];
+    double* p_next = new double[n];
+
+    // Initialize p_curr with 1/n
+    parallel_for(long i = 0; i < n; i++) {
+        p_curr[i] = one_over_n;
+    }
+
+    double addedConstant = (1.0 - damping) / n;
+
+    for (int iter = 0; iter < max_iters; iter++) {
+        // Reset p_next to zero
+        vertexMap(GA.V, PR_Vertex_Reset(p_next));
+
+        // Apply the PageRank update function to all edges
+        edgeMap(GA, GA.V, PR_F(p_curr, p_next, GA.V));
+
+        // Update the PageRank values in p_next
+        vertexMap(GA.V, PR_Vertex_F(p_curr, p_next, damping, addedConstant));
+
+        // Swap p_curr and p_next
+        std::swap(p_curr, p_next);
+    }
+
+    // Cleanup
+    delete[] p_curr;
+    delete[] p_next;
+}

@@ -1,0 +1,73 @@
+#include "test.h"
+
+// Function to initialize vertex data
+void INIT_VERTEX(long n, uintE* &IDs, uintE* &prevIDs, bool* &frontier) {
+    IDs = new uintE[n];
+    prevIDs = new uintE[n];
+    frontier = new bool[n];
+    for (long i = 0; i < n; ++i) {
+        IDs[i] = i; // Initialize IDs to vertex indices
+        prevIDs[i] = 0; // Initialize prevIDs to zero
+        frontier[i] = true; // All vertices are active initially
+    }
+}
+
+// Functor for updating vertices
+struct UpdateVertex {
+    uintE* IDs;
+    uintE* prevIDs;
+    UpdateVertex(uintE* _IDs, uintE* _prevIDs) : IDs(_IDs), prevIDs(_prevIDs) {}
+    inline bool operator() (uintE i) {
+        prevIDs[i] = IDs[i];
+        return true;
+    }
+};
+
+// Functor for updating edges
+struct EdgeUpdate {
+    uintE* IDs;
+    uintE* prevIDs;
+    EdgeUpdate(uintE* _IDs, uintE* _prevIDs) : IDs(_IDs), prevIDs(_prevIDs) {}
+    inline bool update(uintE s, uintE d) {
+        uintE origID = IDs[d];
+        if (IDs[s] < origID) {
+            IDs[d] = std::min(origID, IDs[s]);
+            if (origID == prevIDs[d]) return true;
+        }
+        return false;
+    }
+    inline bool cond(uintE d) { return true; }
+};
+
+// Functor for atomic edge update
+struct EdgeUpdateAtomic {
+    uintE* IDs;
+    uintE* prevIDs;
+    EdgeUpdateAtomic(uintE* _IDs, uintE* _prevIDs) : IDs(_IDs), prevIDs(_prevIDs) {}
+    inline bool update(uintE s, uintE d) {
+        uintE origID = IDs[d];
+        return (writeMin(&IDs[d], IDs[s]) && origID == prevIDs[d]);
+    }
+    inline bool cond(uintE d) { return true; }
+};
+
+// Main computation function
+void COMPUTE(graph<vertex> &GA, long n) {
+    uintE* IDs;
+    uintE* prevIDs;
+    bool* frontier;
+    INIT_VERTEX(n, IDs, prevIDs, frontier);
+
+    vertexSubset Frontier(n, n, frontier);
+    while (!Frontier.isEmpty()) {
+        vertexMap(Frontier, UpdateVertex(IDs, prevIDs));
+        vertexSubset output = edgeMap(GA, Frontier, EdgeUpdate(IDs, prevIDs));
+        Frontier.del();
+        Frontier = output;
+    }
+
+    Frontier.del();
+    delete[] IDs;
+    delete[] prevIDs;
+}
+

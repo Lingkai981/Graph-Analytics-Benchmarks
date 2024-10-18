@@ -1,0 +1,29 @@
+
+object ConnectedComponentsExample {
+  def main(args: Array[String]): Unit = {
+    val conf = new SparkConf().setAppName("ConnectedComponentsExample").setMaster("local[*]")
+    val sc = new SparkContext(conf)
+
+    // Load the edges as a graph
+    val graph = GraphLoader.edgeListFile(sc, "data/test/followers.txt")
+
+    // Compute the connected components
+    val cc = graph.connectedComponents().vertices
+
+    // Load the usernames
+    val users: RDD[(VertexId, String)] = sc.textFile("data/test/users.txt").map { line =>
+      val fields = line.split(",")
+      (fields(0).toLong, fields(1))
+    }
+
+    // Join the connected components with the usernames
+    val ccByUsername = users.join(cc).map {
+      case (id, (username, cc)) => (username, cc)
+    }
+
+    // Print the result
+    println(ccByUsername.collect().mkString("\n"))
+
+    sc.stop()
+  }
+}

@@ -1,0 +1,51 @@
+
+object ConnectedComponentsExample {
+  def main(args: Array[String]): Unit = {
+    // Initialize Spark session
+    val spark = SparkSession.builder()
+      .appName("ConnectedComponentsExample")
+      .getOrCreate()
+    val sc = spark.sparkContext
+
+    // Function to load the graph from an edge list file
+    def loadGraph(filePath: String) = {
+      GraphLoader.edgeListFile(sc, filePath)
+    }
+
+    // Function to compute connected components of the graph
+    def computeConnectedComponents(graph: org.apache.spark.graphx.Graph[Int, Int]) = {
+      graph.connectedComponents().vertices
+    }
+
+    // Function to load users from a text file
+    def loadUsers(filePath: String) = {
+      sc.textFile(filePath).map { line =>
+        val fields = line.split(",")
+        (fields(0).toLong, fields(1))
+      }
+    }
+
+    // Function to join users with connected components
+    def joinUsersWithComponents(users: org.apache.spark.rdd.RDD[(Long, String)], cc: org.apache.spark.graphx.VertexRDD[Long]) = {
+      users.join(cc).map {
+        case (id, (username, cc)) => (username, cc)
+      }
+    }
+
+    // Function to print the results
+    def printResults(ccByUsername: org.apache.spark.rdd.RDD[(String, Long)]) = {
+      println(ccByUsername.collect().mkString("\n"))
+    }
+
+    // Main execution
+    val graph = loadGraph("data/graphx/followers.txt")
+    val cc = computeConnectedComponents(graph)
+    val users = loadUsers("data/graphx/users.txt")
+    val ccByUsername = joinUsersWithComponents(users, cc)
+
+    printResults(ccByUsername)
+
+    // Stop the Spark session
+    spark.stop()
+  }
+}

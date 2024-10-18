@@ -1,0 +1,71 @@
+#include "test.h"
+#include <vector>
+#include <iostream>
+#include <cmath>
+
+const double DAMPING_FACTOR = 0.85;
+const double EPSILON = 1e-6;
+const int MAX_ITERATIONS = 100;
+
+struct Vertex {
+    double rank;
+    double new_rank;
+    std::vector<int> out_edges;
+};
+
+void initialize_graph(std::vector<Vertex>& graph, int num_vertices) {
+    for (int i = 0; i < num_vertices; ++i) {
+        graph[i].rank = 1.0 / num_vertices;
+        graph[i].new_rank = 0.0;
+    }
+}
+
+void page_rank(std::vector<Vertex>& graph, int num_vertices) {
+    for (int iter = 0; iter < MAX_ITERATIONS; ++iter) {
+        // Distribute rank to outgoing edges
+        for (int i = 0; i < num_vertices; ++i) {
+            double rank_contribution = graph[i].rank / graph[i].out_edges.size();
+            for (int neighbor : graph[i].out_edges) {
+                graph[neighbor].new_rank += rank_contribution;
+            }
+        }
+
+        // Apply damping factor and calculate new ranks
+        double diff = 0.0;
+        for (int i = 0; i < num_vertices; ++i) {
+            double new_rank = (1.0 - DAMPING_FACTOR) / num_vertices + DAMPING_FACTOR * graph[i].new_rank;
+            diff += std::abs(new_rank - graph[i].rank);
+            graph[i].rank = new_rank;
+            graph[i].new_rank = 0.0; // Reset for next iteration
+        }
+
+        // Check for convergence
+        if (diff < EPSILON) {
+            break;
+        }
+    }
+}
+
+int main() {
+    int num_vertices = 4;
+    std::vector<Vertex> graph(num_vertices);
+
+    // Initialize the graph
+    initialize_graph(graph, num_vertices);
+
+    // Add edges (example graph)
+    graph[0].out_edges = {1, 2};
+    graph[1].out_edges = {2};
+    graph[2].out_edges = {0};
+    graph[3].out_edges = {0, 2};
+
+    // Run PageRank algorithm
+    page_rank(graph, num_vertices);
+
+    // Print the rank of each vertex
+    for (int i = 0; i < num_vertices; ++i) {
+        std::cout << "Vertex " << i << " has rank: " << graph[i].rank << std::endl;
+    }
+
+    return 0;
+}

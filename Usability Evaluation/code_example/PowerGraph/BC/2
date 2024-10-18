@@ -1,0 +1,84 @@
+#include <test.hpp>
+#include <graphlab.hpp>
+
+struct vertex_data {
+  float betweenness_centrality;
+  vertex_data() : betweenness_centrality(0) {}
+  void save(graphlab::oarchive& oarc) const {
+    oarc << betweenness_centrality;
+  }
+  void load(graphlab::iarchive& iarc) {
+    iarc >> betweenness_centrality;
+  }
+};
+
+struct edge_data {
+  // Add any edge-specific data if necessary
+};
+
+typedef graphlab::distributed_graph<vertex_data, edge_data> graph_type;
+typedef float gather_type;
+
+struct bc_vertex_program : public graphlab::ivertex_program<graph_type, gather_type> {
+  float betweenness_centrality;
+
+  bc_vertex_program() : betweenness_centrality(0) {}
+
+  void init(icontext_type& context, const vertex_type& vertex, const message_type& msg) {
+    // Initialization logic if needed
+  }
+
+  edge_dir_type gather_edges(icontext_type& context, const vertex_type& vertex) const {
+    return graphlab::NO_EDGES; // No gathering needed
+  }
+
+  gather_type gather(icontext_type& context, const vertex_type& vertex, edge_type& edge) const {
+    return 0; // No gathering needed
+  }
+
+  void apply(icontext_type& context, vertex_type& vertex, const gather_type& total) {
+    // Update the vertex's betweenness centrality
+    vertex.data().betweenness_centrality = betweenness_centrality;
+  }
+
+  edge_dir_type scatter_edges(icontext_type& context, const vertex_type& vertex) const {
+    return graphlab::NO_EDGES; // No scattering needed
+  }
+
+  void scatter(icontext_type& context, const vertex_type& vertex, edge_type& edge) const {
+    // No scattering needed
+  }
+
+  void save(graphlab::oarchive& oarc) const {
+    oarc << betweenness_centrality;
+  }
+
+  void load(graphlab::iarchive& iarc) {
+    iarc >> betweenness_centrality;
+  }
+};
+
+int main(int argc, char** argv) {
+  graphlab::mpi_tools::init(argc, argv);
+  graphlab::distributed_control dc;
+  graphlab::command_line_options clopts("Betweenness Centrality algorithm.");
+  std::string graph_dir;
+  clopts.attach_option("graph", &graph_dir, graph_dir, "The graph file.");
+  if (!clopts.parse(argc, argv)) {
+    std::cout << "Error parsing arguments." << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  graph_type graph(dc, clopts);
+  graph.load_structure(graph_dir, "tsv");
+  graph.finalize();
+  std::cout << "#vertices: " << graph.num_vertices() << " #edges: " << graph.num_edges() << std::endl;
+
+  graphlab::async_consistent_engine<bc_vertex_program> engine(dc, graph, clopts);
+  engine.signal_all();
+  engine.start();
+  std::cout << "Runtime: " << engine.elapsed_seconds() << std::endl;
+
+  graphlab::mpi_tools::finalize();
+  return EXIT_SUCCESS;
+}

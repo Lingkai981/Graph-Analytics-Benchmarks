@@ -1,0 +1,56 @@
+#include "../core/api.h"
+
+// Function to count triangles in a graph
+int64_t TriangleCounting(graph& G) {
+    // Step 1: VertexMap to initialize counts of triangles
+    auto InitTriangleCounts = VERTEXMAP(G, [&](Vertex& v) {
+        v.set_property("triangle_count", 0);
+    });
+
+    // Step 2: EdgeMap to count triangles
+    auto CheckTriangles = EDGEMAP_VEC(G, [&](Edge& e) {
+        int64_t count = 0;
+        auto u = e.source();
+        auto v = e.destination();
+
+        if (u < v) {
+            // For u -> w edge, checking if there is a u -> v and v -> w connection
+            auto edges_u = G.edges(u);
+            for (auto& edge_u : edges_u) {
+                auto w = edge_u.destination();
+                if (G.has_edge(w, v)) {
+                    count++;
+                }
+            }
+        }
+
+        return count;
+    }, INIT_FUNC, ADD_FUNC);
+
+    // Step 3: VertexMap for accumulating triangle counts
+    auto AccumulateTriangles = VERTEXMAP(G, [&](Vertex& v) {
+        int64_t current_count = v.get_property<int64_t>("triangle_count");
+        v.set_property("triangle_count", current_count + CheckTriangles(v));
+    });
+
+    // Step 4: Reducing all the triangle counts
+    int64_t total_triangle_count = REDUCE(G, [&](Vertex& v) {
+        return v.get_property<int64_t>("triangle_count");
+    }, INT64_ADD);
+
+    return total_triangle_count;
+}
+
+// Example usage
+int main(int argc, char* argv[]) {
+    // Load graph
+    graph G = load_graph_from_file(argv[1]);
+
+    // Counting the number of triangles
+    int64_t num_triangles = TriangleCounting(G);
+
+    // Output result
+    std::cout << "Number of triangles in the graph: " << num_triangles << std::endl;
+
+    return 0;
+}

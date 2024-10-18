@@ -1,0 +1,68 @@
+
+#include <test.hpp>
+#include <graphlab.hpp>
+
+// Define the vertex data type
+struct vertex_data {
+  double rank;
+  vertex_data() : rank(1.0) {}
+};
+
+// Define the edge data type
+typedef graphlab::empty edge_data;
+
+// Define the graph type
+typedef graphlab::distributed_graph<vertex_data, edge_data> graph_type;
+
+// Define the vertex program
+class pagerank : public graphlab::ivertex_program<graph_type, double> {
+public:
+  double gather(icontext_type& context, const vertex_type& vertex, edge_type& edge) const {
+    return edge.target().data().rank / edge.source().num_out_edges();
+  }
+
+  void apply(icontext_type& context, vertex_type& vertex, const gather_type& total) {
+    vertex.data().rank = 0.15 + 0.85 * total;
+  }
+
+  edge_dir_type gather_edges(icontext_type& context, const vertex_type& vertex) const {
+    return graphlab::IN_EDGES;
+  }
+
+  edge_dir_type scatter_edges(icontext_type& context, const vertex_type& vertex) const {
+    return graphlab::NO_EDGES;
+  }
+};
+
+int main(int argc, char** argv) {
+  // Initialize control object
+  graphlab::distributed_control dc;
+
+  // Parse command line options
+  graphlab::command_line_options clopts("PageRank algorithm.");
+  std::string graph_dir;
+  std::string format = "snap";
+  clopts.attach_option("graph", graph_dir, "", "The graph file.");
+  if (!clopts.parse(argc, argv)) {
+    std::cout << "Error parsing arguments." << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  // Load the graph
+  graph_type graph(dc, clopts);
+  graph.load_format(graph_dir, format);
+  graph.finalize();
+
+  // Initialize the vertex program
+  graphlab::omni_engine<pagerank> engine(dc, graph, "sync", clopts);
+  
+  // Run the engine
+  engine.signal_all();
+  engine.start();
+
+  // Output the runtime
+  const double runtime = engine.elapsed_seconds();
+  std::cout << "Finished running engine in " << runtime << " seconds." << std::endl;
+
+  return EXIT_SUCCESS;
+}

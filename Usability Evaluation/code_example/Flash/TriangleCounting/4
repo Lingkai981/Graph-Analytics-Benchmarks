@@ -1,0 +1,66 @@
+#include "../core/api.h"
+
+// Define vertex initialization function
+DefineMapV(INIT) {
+    v.id = id(v);
+    v.deg = deg(v);
+    v.count = 0;
+    v.out.clear();
+    return v;
+};
+
+// Define edge check function
+DefineFE(CHECK) {
+    return (s.deg > d.deg) || (s.deg == d.deg && s.id > d.id);
+};
+
+// Define edge update function
+DefineMapE(UPDATE) {
+    d.out.push_back(s.id);
+    return d;
+};
+
+// Define edge update2 function
+DefineMapE(UPDATE2) {
+    d.count += set_intersect(s.out, d.out, res);
+    return d;
+};
+
+// Define vertex count function
+DefineMapV(COUNT) {
+    cnt += v.count;
+    return v;
+};
+
+int main(int argc, char* argv[]) {
+    // Initialize dataset
+    SetDataset(argv[1], argv[2]);
+
+    // Initialize all vertices
+    VSet U = vertexMap<VTYPE>(All, CTrueV, INIT);
+
+    // Apply edgeMapDense to update edges using CHECK and UPDATE
+    U = edgeMapDenseFunction<VTYPE>(All, U, EU, CHECK, UPDATE, CTrueV);
+
+    // Apply edgeMapDense to update edges using CHECK and UPDATE2
+    U = edgeMapDenseFunction<VTYPE>(All, U, EU, CHECK, UPDATE2, CTrueV, false);
+
+    // Initialize cnt and cnt_all
+    long long cnt = 0;
+    long long cnt_all = 0;
+
+    // Apply vertexMap to count triangles
+    vertexMap<VTYPE>(All, CTrueV, COUNT);
+
+    // Sum the total count across all vertices
+    cnt_all = Sum(cnt);
+
+    // Measure processing time
+    double processing_time = GetTime();
+
+    // Print results
+    printf("number of triangles = %lld\n", cnt_all);
+    printf("total time = %f\n", processing_time);
+
+    return 0;
+}

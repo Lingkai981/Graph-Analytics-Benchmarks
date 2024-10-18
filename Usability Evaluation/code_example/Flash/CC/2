@@ -1,0 +1,69 @@
+
+#include "../core/api.h"
+
+template<class VTYPE>
+void ConnectedComponents(Graph<VTYPE> &G, VSet &initialVertices) {
+    bool isUpdated = true;
+  
+    // Initialize vertex labels
+    initialVertices.vertexMap([](int id) { return id; });
+
+    // Main loop continues until no more updates
+    while (isUpdated) {
+        isUpdated = false;
+
+        // Edge Map
+        // Vertex updates (processing function)
+        auto updateFunction = [&G, &isUpdated](int src, int dst) {
+            int srcLabel = G.getVertexLabel(src);
+            int dstLabel = G.getVertexLabel(dst);
+
+            if (srcLabel < dstLabel) {
+                G.setVertexLabel(dst, srcLabel);
+                isUpdated = true;
+            } else if (dstLabel < srcLabel) {
+                G.setVertexLabel(src, dstLabel);
+                isUpdated = true;
+            }
+        };
+
+        // Sparse function for the case with fewer active vertices
+        auto edgeMapSparseFunc = [&G, &updateFunction](VSet &U) {
+            for (auto u : U) {
+                G.forEachNeighbor(u, [&](int v) {
+                    updateFunction(u, v);
+                });
+            }
+        };
+
+        // Dense function for the case with many active vertices
+        auto edgeMapDenseFunc = [&G, &updateFunction]() {
+            int numVertices = G.getNumVertices();
+            for (int u = 0; u < numVertices; ++u) {
+                G.forEachNeighbor(u, [&](int v) {
+                    updateFunction(u, v);
+                });
+            }
+        };
+
+        // Choose between sparse and dense based on the size of the active vertex set
+        int numActiveVertices = initialVertices.size();
+        if (numActiveVertices < G.getNumVertices() / 10)
+            edgeMapSparseFunc(initialVertices);
+        else
+            edgeMapDenseFunc();
+    }
+}
+
+int main() {
+    // Load the graph here or construct it
+    Graph<int> G;
+
+    // For example purposes, create an initial vertex set
+    VSet initialVertices = G.getAllVertices();
+
+    // Run the Connected Components algorithm
+    ConnectedComponents(G, initialVertices);
+
+    return 0;
+}

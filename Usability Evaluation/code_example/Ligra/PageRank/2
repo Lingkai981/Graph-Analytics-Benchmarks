@@ -1,0 +1,92 @@
+#include "test.h"
+#include <cmath>
+#include <iostream>
+#include <vector>
+#include <algorithm>
+
+// Constants
+const double DAMPING_FACTOR = 0.85;
+const int MAX_ITER = 20;
+const double EPSILON = 1e-6;
+
+// Function to initialize the PageRank values
+template <class vertex>
+struct PR_F {
+    double* pr;
+    PR_F(double* _pr) : pr(_pr) {}
+    inline bool operator() (uintE i) {
+        pr[i] = 1.0;
+        return true;
+    }
+};
+
+// Function to calculate the contribution of each vertex
+template <class vertex>
+struct PR_Vertex_F {
+    double* pr;
+    double* contrib;
+    PR_Vertex_F(double* _pr, double* _contrib) : pr(_pr), contrib(_contrib) {}
+    inline bool update(uintE s, uintE d) {
+        contrib[d] += pr[s] / GA.V[s].getOutDegree();
+        return true;
+    }
+    inline bool updateAtomic(uintE s, uintE d) {
+        __sync_fetch_and_add(&contrib[d], pr[s] / GA.V[s].getOutDegree());
+        return true;
+    }
+    inline bool cond(uintE d) { return true; }
+};
+
+// Function to update the PageRank values
+template <class vertex>
+struct PR_Update_F {
+    double* pr;
+    double* contrib;
+    PR_Update_F(double* _pr, double* _contrib) : pr(_pr), contrib(_contrib) {}
+    inline bool operator() (uintE i) {
+        double new_pr = (1.0 - DAMPING_FACTOR) + DAMPING_FACTOR * contrib[i];
+        if (fabs(new_pr - pr[i]) > EPSILON) {
+            pr[i] = new_pr;
+            return true;
+        }
+        return false;
+    }
+};
+
+int main(int argc, char* argv[]) {
+    // Initialize the graph
+    commandLine P(argc, argv);
+    auto GA = readGraphFromFile(P.getArgument(0));
+    long n = GA.numVertices();
+    
+    // Allocate memory for PageRank values and contributions
+    double* pr = new double[n];
+    double* contrib = new double[n];
+    
+    // Initialize PageRank values
+    vertexMap(GA.V, PR_F<vertex>(pr));
+    
+    for (int iter = 0; iter < MAX_ITER; iter++) {
+        // Reset contributions
+        std::fill(contrib, contrib + n, 0.0);
+        
+        // Calculate contributions from each vertex
+        vertexSubset frontier = edgeMap(GA, GA.V, PR_Vertex_F<vertex>(pr, contrib), -1, no_dense);
+        
+        // Update PageRank values
+        vertexMap(GA.V, PR_Update_F<vertex>(pr, contrib));
+        
+        // Check for convergence
+        if (frontier.numNonzeros() == 0) break;
+    }
+    
+    // Output the PageRank values
+    for (long i = 0; i < n; i++) {
+        std::cout << "Vertex " << i << ": " << pr[i] << std::endl;
+    }
+    
+    // Clean up
+    delete[] pr;
+    delete[] contrib;
+    return 0;
+}

@@ -1,0 +1,77 @@
+
+#include "../core/api.h"
+
+template <typename VSET>
+class KCore {
+  public:
+    Graph<VSET> &G;
+    int k;
+    
+    KCore(Graph<VSET> &graph, int k) : G(graph), k(k) {}
+
+    bool UpdateDegrees(Vertex &v, int* degree) {
+        int d = degree[v.id()] - k;
+        if (d <= 0) {
+            degree[v.id()] = 0;
+            return false;
+        }
+        degree[v.id()] -= 1;
+        return true;
+    }
+
+    bool FilterVertices(Vertex &v, int* degree) {
+        return degree[v.id()] > 0;
+    }
+    
+    // k-Core implementation
+    void Compute() {
+        int numVertices = G.numVertices();
+        int* degree = new int[numVertices];
+        
+        // Initialize degree array
+        for (int i = 0; i < numVertices; i++) {
+            degree[i] = G.outDegree(i);
+        }
+
+        bool changed = true;
+        
+        while (changed) {
+            changed = false;
+
+            // Apply UpdateDegrees function to each vertex
+            vertexMap(G, [&](Vertex &v) {
+                for (auto nbr : G.outIter(v.id())) {
+                    if (UpdateDegrees(G.vert(nbr), degree)) {
+                        changed = true;
+                    }
+                }
+                return true;
+            });
+            
+            // Filter the vertices based on updated degrees
+            VSet U = vertexMap(G, [&](Vertex &v) {
+                return FilterVertices(v, degree);
+            });
+            
+            if (Size(U) == 0) {
+                break;
+            }
+        }
+        
+        delete[] degree;
+    }
+};
+
+int main(int argc, char* argv[]) {
+    if (argc != 3) {
+        std::cerr << "Usage: " << argv[0] << " <graph-file> <k-value>" << std::endl;
+        return 1;
+    }
+    Graph<VSET> G(argv[1]);
+    int k = atoi(argv[2]);
+    
+    KCore<VSET> kcore(G, k);
+    kcore.Compute();
+    
+    return 0;
+}

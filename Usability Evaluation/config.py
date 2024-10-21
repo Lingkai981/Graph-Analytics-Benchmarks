@@ -20,7 +20,6 @@ class Config:
         return {
             'PageRank': 'PageRank',
             'SSSP': 'Single-Source Shortest Path',
-            'Louvain': 'Louvain',
             'kCore': 'k-Core',
             'BC': 'Betweenness Centrality',
             'TriangleCounting': 'Triangle Counting',

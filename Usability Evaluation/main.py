@@ -3,7 +3,7 @@ import json
 import config
 import time
 
-my_config = config.Config('/Users/milk/PycharmProjects/subjectiveEvaluation')
+my_config = config.Config('subjectiveEvaluation')
 
 url = my_config.get_url()
 
@@ -19,7 +19,7 @@ headers = {
 platforms = ['Pregel']
 
 algorithms = ['CC']
-# algorithms = ['PageRank', 'SSSP', 'Louvain', 'kCore', 'BC', 'LPA', 'TriangleCounting', 'kClique', 'CC']
+# algorithms = ['PageRank', 'SSSP', 'kCore', 'BC', 'LPA', 'TriangleCounting', 'kClique', 'CC']
 
 levels = ['1', '2', '3', '4']
 

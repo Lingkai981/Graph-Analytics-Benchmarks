@@ -15,23 +15,22 @@ headers = {
     'Connection': 'keep-alive'
 }
 
-# platforms = ['Flash', 'Gemini', 'Ligra', 'Grape', 'PowerGraph', 'Pregel', 'Graphx']
-platforms = ['Pregel']
+platforms = ['Flash', 'Gemini', 'Ligra', 'Grape', 'PowerGraph', 'Pregel', 'Graphx', 'Gthinker']
+# platforms = ['Gthinker']
 
-algorithms = ['CC']
-# algorithms = ['PageRank', 'SSSP', 'kCore', 'BC', 'LPA', 'TriangleCounting', 'kClique', 'CC']
+# algorithms = ['kClique']
+algorithms = ['PageRank', 'SSSP', 'kCore', 'BC', 'LPA', 'TriangleCounting', 'kClique', 'CC']
 
 levels = ['1', '2', '3', '4']
 
-for platform in platforms:
+def Evaluation(platform, algorithm):
 
-    for algorithm in algorithms:
         codes = []
         for level in levels:
             data = {
-                "conversation_id": "milk123",
+                "conversation_id": my_config.get_conversation_id(),
                 "bot_id": my_config.get_bot_id()[platform],
-                "user": "milk123",
+                "user": my_config.get_conversation_id(),
                 "query": my_config.tip_level(platform, algorithm, level) + '\n' + my_config.get_algoritm(platform, algorithm),
                 "stream": False
             }
@@ -52,16 +51,16 @@ for platform in platforms:
             # print(json.loads(response.text))
             #
             # print(code)
-            print(platform+' '+algorithm+' '+level)
+            # print(platform+' '+algorithm+' '+level)
 
             codes.append(code)
 
         CodeEvaluator_i = 0
         while CodeEvaluator_i < 1:
             CodeEvaluatorData = {
-                "conversation_id": "milk123",
+                "conversation_id": "your conversation id",
                 "bot_id": my_config.get_bot_id()['CodeEvaluator'],
-                "user": "milk123",
+                "user": "your conversation id",
                 "query": my_config.get_code_evaluator_str(platform, algorithm, codes),
                 "stream": False
             }
@@ -78,14 +77,17 @@ for platform in platforms:
             CodeEvaluator_i+=1
 
 
+def main():
+    
+    platform = input("Enter platform (Pregel, Grape, GraphX, GThinker, Flash, PowerGraph, Ligra): ")
+    algorithm = input("Enter algorithm (PageRank, SSSP, kCore, BC, LPA, TriangleCounting, kClique, CC): ")
+    
+    if platform not in platforms or algorithm not in algorithms:
+        print("Please choose the correct platform and algorithm.")
+        ruturn
 
-        # Pretty-print JSON data
-        # pretty_json = json.dumps(data, indent=4)
-        # print(pretty_json)
-
-
-
-
+    Evaluation(platform, algorithm)
+    
 
 
 

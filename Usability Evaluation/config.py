@@ -3,6 +3,12 @@ class Config:
     def __init__(self, file_path):
         self.file_path = file_path
 
+    def get_conversation_id(self):
+        return "your conversation id"
+    
+    def get_Authorization(self):
+        return 'your Authorization key'
+
     def get_bot_id(self):
         return {
             'Flash': '7368468233818521605',
@@ -12,7 +18,8 @@ class Config:
             'Grape': '7384752282170523654',
             'PowerGraph': '7388857314184839186',
             'Pregel': '7389832072153939976',
-            'Graphx': '7389855404106530834'
+            'Graphx': '7389855404106530834',
+            'Gthinker': '7453009448311799813'
         }
 
 
@@ -28,8 +35,7 @@ class Config:
             'CC': 'Connected Component'
         }
 
-    def get_Authorization(self):
-        return 'your Authorization key'
+
 
     def get_url(self):
         return 'https://api.coze.com/open_api/v2/chat'
@@ -40,7 +46,7 @@ class Config:
             return str(file_contents)
 
     def get_algoritm(self, platform, algorithm):
-        return 'Refer to the above tips to help me generate the ' + self.get_algorithm_name()[algorithm] + ' algorithm completed code.'
+        return 'Refer to the above tips to help me generate the ' + self.get_algorithm_name()[algorithm] + ' algorithm completed code based on the platform’s API information.\n'
     def get_standard_code(self, platform, algorithm):
         with open(self.file_path + '/code/' + platform + '/' + algorithm, 'r') as file:
             file_contents = file.read()

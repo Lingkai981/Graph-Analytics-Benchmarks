@@ -48,11 +48,6 @@ def Evaluation(platform, algorithm):
                             judge = 0
                         break
 
-            # print(json.loads(response.text))
-            #
-            # print(code)
-            # print(platform+' '+algorithm+' '+level)
-
             codes.append(code)
 
         CodeEvaluator_i = 0

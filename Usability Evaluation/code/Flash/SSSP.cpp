@@ -1,4 +1,3 @@
-#include "../core/api.h"
 class SSSPtest : public testAppBase<FRAG_T, SSSP_TYPE> {
  public:
   INSTALL_test_WORKER(SSSPtest<FRAG_T>, SSSP_TYPE, FRAG_T)
@@ -15,26 +14,26 @@ class SSSPtest : public testAppBase<FRAG_T, SSSP_TYPE> {
     LOG(INFO) << "Run SSSP with test, total vertices: " << n_vertex
               << std::endl;
 
-    DefineMapV(init_v) { v.dis = (id == source) ? 0 : -1; };
+    DefineVertexProcessor(init_v) { v.dis = (id == source) ? 0 : -1; };
     vset_t a = All;
-    a = VertexMap(a, CTrueV, init_v);
+    a = processVertices(a, CTrueV, init_v);
 
-    DefineFV(f_filter) { return id == source; };
-    a = VertexMap(a, f_filter);
+    DefineVertexFilter(f_filter) { return id == source; };
+    a = processVertices(a, f_filter);
 
-    DefineFE(check) { return (d.dis < -0.5 || d.dis > s.dis + weight); };
-    DefineMapE(update) {
+    DefineEdgeCondition(check) { return (d.dis < -0.5 || d.dis > s.dis + weight); };
+    DefineEdgeUpdater(update) {
       if (d.dis < -0.5 || d.dis > s.dis + weight)
         d.dis = s.dis + weight;
     };
-    DefineMapE(reduce) {
+    DefineEdgeUpdater(reduce) {
       if (d.dis < -0.5 || d.dis > s.dis)
         d.dis = s.dis;
     };
 
     for (int len = VSize(a), i = 1; len > 0; len = VSize(a), ++i) {
       LOG(INFO) << "Round " << i << ": size=" << len << std::endl;
-      a = EdgeMap(a, ED, check, update, CTrueV, reduce);
+      a = processEdges(a, ED, check, update, CTrueV, reduce);
     }
   }
 };

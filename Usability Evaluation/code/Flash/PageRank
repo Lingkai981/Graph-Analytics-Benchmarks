@@ -1,19 +1,17 @@
-#include "../core/api.h"
-
 int main(int argc, char *argv[]) {
-	VertexType(float,val,float,next,int,deg);
-	SetDataset(argv[1], argv[2]);
+	NodeStruct(float,val,float,next,int,deg);
+	LoadData(argv[1], argv[2]);
 
-	DefineMapV(init) {v.val = 1.0/n_vertex; v.next = 0.0; v.deg = deg(v);};
-	DefineMapE(update) {d.next += 0.85*s.val/s.deg;};
-	DefineMapV(local) {v.val = v.next + 0.15/n_vertex; v.next = 0;};
+	DefineVertexProcessor(init) {v.val = 1.0/n_vertex; v.next = 0.0; v.deg = deg(v);};
+	DefineEdgeUpdater(update) {d.next += 0.85*s.val/s.deg;};
+	DefineVertexProcessor(local) {v.val = v.next + 0.15/n_vertex; v.next = 0;};
 
-	vertexMap(All, CTrueV, init);
+	processVertices(All, CTrueV, init);
 
 	for(int i = 0; i < 10; ++i) {
 		print("Round %d\n", i);
-		edgeMapDense(All, EU, CTrueE, update, CTrueV);
-		vertexMap(All, CTrueV, local);
+		processEdgesDense(All, EU, CTrueE, update, CTrueV);
+		processVertices(All, CTrueV, local);
 	}
 
 	float max_val = -1; double tt = 0, t = GetTime();

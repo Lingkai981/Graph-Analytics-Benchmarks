@@ -1,22 +1,20 @@
-#include "../core/api.h"
-
 int main(int argc, char *argv[]) {
-	VertexType(long long,cid);
-	SetDataset(argv[1], argv[2]);
+	NodeStruct(long long,cid);
+	LoadData(argv[1], argv[2]);
 
-	DefineMapV(init) {
+	DefineVertexProcessor(init) {
 		v.cid = deg(v) * (long long) n_vertex + id(v);
 		return v;
 	};
 
-	//DefineFE(check) {return s.cid > d.cid;};
-	DefineMapE(update) {d.cid = max(d.cid, s.cid); return d;};
+	//DefineEdgeCondition(check) {return s.cid > d.cid;};
+	DefineEdgeUpdater(update) {d.cid = max(d.cid, s.cid); return d;};
 
-	vertexSubset A = vertexMap(All, CTrueV, init);
+	vertexSubset A = processVertices(All, CTrueV, init);
 
 	for(int len = A.size(), i = 0; len > 0; len = A.size(),++i) {
 		print("Round %d: size=%d\n", i, len);
-		A = edgeMap(A, EU, CTrueE, update, CTrueV, update);
+		A = processEdges(A, EU, CTrueE, update, CTrueV, update);
 	}
 
 	double t = GetTime();

@@ -1,14 +1,14 @@
 Main Functions and Analysis
-1. SetDataset
+1. LoadData
 This function initializes the dataset for the graph processing.
 Parameters:
 datasetPath: Path to the primary dataset.
 additionalData: Path to additional data needed for the processing.
 Purpose: Initializes the dataset for the graph processing.
 Example Usage:
-SetDataset("path/to/dataset", "path/to/additional/data");
+LoadData("path/to/dataset", "path/to/additional/data");
 
-2. vertexMap
+2. processVertices
 This function applies a function to each vertex in a vertex set.
 Parameters:
 U: The vertex set to operate on.
@@ -18,13 +18,13 @@ b: An optional boolean flag to use a default map function.
 Purpose: Applies a function f to each vertex in the vertex set U. Optionally, it can also apply a map function m.
 Example Usage:
 DefineMapV(init) {v.val = 1.0/n_vertex; v.next = 0.0; v.deg = deg(v);};
-vertexMap(All, CTrueV, init);
+processVertices(All, CTrueV, init);
 
-3. edgeMapDense
+3. processEdgesDense
 This function processes edges in a dense format.
 Signatures:
 template<class VTYPE, class F, class M, class C, class H>
-VSet edgeMapDenseFunction(Graph<VTYPE> &G, VSet &U, H h, F &f, M &m, C &c, bool b = true);
+VSet processEdgesDenseFunction(Graph<VTYPE> &G, VSet &U, H h, F &f, M &m, C &c, bool b = true);
 Parameters:
 G: The graph to operate on.
 U: The vertex set to operate on.
@@ -35,8 +35,8 @@ c: A filter condition.
 b: A boolean flag indicating whether to use a default map function.
 Purpose: Processes edges in a dense format based on the provided handler h. Applies function f, map function m, and filter condition c.
 Example Usage:
-DefineMapE(update) {d.next += 0.85*s.val/s.deg;};
-edgeMapDense(All, EU, CTrueE, update, CTrueV);
+DefineEdgeUpdater(update) {d.next += 0.85*s.val/s.deg;};
+processEdgesDense(All, EU, CTrueE, update, CTrueV);
 
 4. Gather
 This function gathers results from all vertices and applies a specified function.
@@ -50,14 +50,14 @@ al = -1; double tt = 0;
 All.Gather(if(v.val > max_val) max_val=v.val; tt += v.val);
 Example Usage of Functions (Not from the Provided Code)
 
-5. vertexMap Example:
+5. processVertices Example:
 DefineMapV(initialize) { v.value = 0; };
-vertexMap(AllVertices, initialize);
+processVertices(AllVertices, initialize);
 This example initializes a value for all vertices.
 
-6. edgeMapDenseFunction Example:
-DefineMapE(accumulate) { d.value += s.value; };
-edgeMapDenseFunction(graph, AllEdges, EdgeHandler, accumulate, mapFunction, conditionFunction);
+6. processEdgesDenseFunction Example:
+DefineEdgeUpdater(accumulate) { d.value += s.value; };
+processEdgesDenseFunction(graph, AllEdges, EdgeHandler, accumulate, mapFunction, conditionFunction);
 
 Below is the pseudocode:
 Algorithm: Graph Processing with Vertex and Edge Mappings
@@ -77,15 +77,15 @@ Algorithm: Graph Processing with Vertex and Edge Mappings
    - v.next = 0
    - return v
 
-4: Initialize all vertices using vertexMap
-   - U = VERTEXMAP(All, CTrueV, INIT)
+4: Initialize all vertices using processVertices
+   - U = processVertices(All, CTrueV, INIT)
 
 5: Repeat for 10 iterations:
    - Print the current round number
-   - Apply edgeMapDense to distribute values based on UPDATE
-     - U = EDGEMAPDENSE(U, All, EU, CTrueE, UPDATE)
-   - Apply vertexMap to update vertex values using LOCAL
-     - U = VERTEXMAP(All, CTrueV, LOCAL)
+   - Apply processEdgesDense to distribute values based on UPDATE
+     - U = processEdgesDENSE(U, All, EU, CTrueE, UPDATE)
+   - Apply processVertices to update vertex values using LOCAL
+     - U = processVertices(All, CTrueV, LOCAL)
 
 6: Initialize max_val and total value tracking:
    - max_val = -1

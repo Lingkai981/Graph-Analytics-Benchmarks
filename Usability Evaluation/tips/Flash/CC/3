@@ -1,11 +1,11 @@
 
 Here are the detailed explanations of the main API functions used in the provided code:
 
-1. vertexMap
+1. processVertices
 Function Signature:
 
 template<class VTYPE, class F, class M>
-inline VSet vertexMap(VSet &U, F &f, M &m, bool b = true);
+inline VSet processVertices(VSet &U, F &f, M &m, bool b = true);
 Parameters:
 
 U: A VSet object representing the set of vertices to be processed.
@@ -14,14 +14,14 @@ M: A function or lambda expression to be applied locally.
 b: A boolean flag to indicate if the function should be applied with a specific condition.
 Example Usage:
 
-vertexSubset A = vertexMap(All, CTrueV, init);
-In this example, vertexMap is used to initialize the vertex subset A using the init function.
+vertexSubset A = processVertices(All, CTrueV, init);
+In this example, processVertices is used to initialize the vertex subset A using the init function.
 
-2. edgeMap
+2. processEdges
 Function Signature:
 
 template<class VTYPE, class F, class M, class C, class R, class H>
-VSet edgeMapFunction(Graph<VTYPE> &G, VSet &U, H h, F &f, M &m, C &c, R &r);
+VSet processEdgesFunction(Graph<VTYPE> &G, VSet &U, H h, F &f, M &m, C &c, R &r);
 Parameters:
 
 G: A Graph object representing the graph.
@@ -33,38 +33,38 @@ C: A function or lambda expression for a condition to filter edges.
 R: A function or lambda expression to be applied for reduction.
 Example Usage:
 
-A = edgeMap(A, EU, CTrueE, update, CTrueV, update);
-In this example, edgeMap is used to update the vertex subset A based on the edges of the graph using the update function.
+A = processEdges(A, EU, CTrueE, update, CTrueV, update);
+In this example, processEdges is used to update the vertex subset A based on the edges of the graph using the update function.
 
-3. DefineMapV
+3. DefineVertexProcessor
 Function Signature:
 
-#define DefineMapV(name) auto name = [&](auto &v)
+#define DefineVertexProcessor(name) auto name = [&](auto &v)
 Parameters:
 
 name: The name of the map function.
 Example Usage:
 
-DefineMapV(init) {
+DefineVertexProcessor(init) {
     v.cid = deg(v) * (long long) n_vertex + id(v);
     return v;
 };
-In this example, DefineMapV defines a map function init that initializes the cid attribute of each vertex.
+In this example, DefineVertexProcessor defines a map function init that initializes the cid attribute of each vertex.
 
-4. DefineMapE
+4. DefineEdgeUpdater
 Function Signature:
 
-#define DefineMapE(name) auto name = [&](auto &s, auto &d)
+#define DefineEdgeUpdater(name) auto name = [&](auto &s, auto &d)
 Parameters:
 
 name: The name of the map function.
 Example Usage:
 
-DefineMapE(update) {
+DefineEdgeUpdater(update) {
     d.cid = max(d.cid, s.cid);
     return d;
 };
-In this example, DefineMapE defines a map function update that updates the cid attribute of each destination vertex based on the source vertex.
+In this example, DefineEdgeUpdater defines a map function update that updates the cid attribute of each destination vertex based on the source vertex.
 
 5. GetTime
 Function Signature:

@@ -1,30 +1,30 @@
 Main Functions and Analysis
-1. vertexMap
+1. processVertices
 Function Signatures:
 template<class VTYPE, class F, class M>
-inline VSet vertexMap(VSet &U, F &f, M &m, bool b = true);
+inline VSet processVertices(VSet &U, F &f, M &m, bool b = true);
 template<class VTYPE, class F>
-inline VSet vertexMap(VSet &U, F &f);
+inline VSet processVertices(VSet &U, F &f);
 Description:
-The vertexMap function is used to apply a function f to a set of vertices U and optionally a mapping function m. It returns a new vertex set.
+The processVertices function is used to apply a function f to a set of vertices U and optionally a mapping function m. It returns a new vertex set.
 Parameters:
 U: The set of vertices to be processed.
 f: A function applied to filter the vertices.
 m: A function applied locally to map the vertices.
 b: A boolean flag (default is true).
 Examples:
-DefineMapV(init) {v.d = deg(v);};
-vertexSubset A = vertexMap(All, CTrueV, init);
+DefineVertexProcessor(init) {v.d = deg(v);};
+vertexSubset A = processVertices(All, CTrueV, init);
 Here, init is a mapping function that sets the degree of each vertex, and CTrueV is a filter that includes all vertices.
 
-2. edgeMapSparse
+2. processEdgesSparse
 Function Signatures:
 template<class VTYPE, class F, class M, class C, class R>
-VSet edgeMapSparseFunction(Graph<VTYPE> &G, VSet &U, int h, F &f, M &m, C &c, R &r);
+VSet processEdgesSparseFunction(Graph<VTYPE> &G, VSet &U, int h, F &f, M &m, C &c, R &r);
 template<class VTYPE, class F, class M, class C, class R, class H>
-VSet edgeMapSparseFunction(Graph<VTYPE> &G, VSet &U, H &h, F &f, M &m, C &c, R &r);
+VSet processEdgesSparseFunction(Graph<VTYPE> &G, VSet &U, H &h, F &f, M &m, C &c, R &r);
 Description:
-The edgeMapSparse function processes edges in a sparse manner. It applies a filter function f to the edges and a mapping function m to update vertex properties.
+The processEdgesSparse function processes edges in a sparse manner. It applies a filter function f to the edges and a mapping function m to update vertex properties.
 Parameters:
 G: The graph containing the vertices and edges.
 U: The set of vertices to be processed.
@@ -34,10 +34,10 @@ m: A mapping function applied to update vertex properties.
 c: A condition function to further filter edges.
 r: A reduction function to combine results.
 Examples:
-DefineFV(check) {return v.d >= k;};
-DefineMapE(update1) {d.c++; return d;};
-DefineMapE(update2) {d.d -= s.c; return d;};
-A = edgeMapSparse(A, EU, CTrueE, update1, check, update2);
+DefineVertexFilter(check) {return v.d >= k;};
+DefineEdgeUpdater(update1) {d.c++; return d;};
+DefineEdgeUpdater(update2) {d.d -= s.c; return d;};
+A = processEdgesSparse(A, EU, CTrueE, update1, check, update2);
 Here, update1 increments a property c for each vertex, and update2 decrements a property d by s.c.
 
 3. Size
@@ -83,23 +83,23 @@ d.d -= s.c
 return d
 Initialize dataset:
 
-SetDataset(argv[1], argv[2])
+LoadData(argv[1], argv[2])
 Convert input argument to integer k:
 
 k = atoi(argv[3])
-Initialize all vertices using vertexMap:
+Initialize all vertices using processVertices:
 
-A = VERTEXMAP(All, CTrueV, INIT)
+A = processVertices(All, CTrueV, INIT)
 Repeat until size of A is zero:
 
 For i = 0; len > 0; ++i:
 Print the current round number and size of A
-A = VERTEXMAP(A, FILTER, LOCAL)
-A = EDGEMAPSPARSE(A, EU, CTrueE, UPDATE1, CHECK, UPDATE2)
+A = processVertices(A, FILTER, LOCAL)
+A = processEdgesSPARSE(A, EU, CTrueE, UPDATE1, CHECK, UPDATE2)
 len = Size(A)
 Measure total processing time:
 t = GetTime()
 Get the size of the remaining vertices:
-s = Size(VERTEXMAP(All, CHECK))
+s = Size(processVertices(All, CHECK))
 Print results:
 Print k-core size and processing time

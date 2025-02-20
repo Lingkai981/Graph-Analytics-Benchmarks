@@ -52,11 +52,11 @@ pip install langchain openai faiss-cpu langchain-openai pydantic
 #### Configure the API key
 Modify the OpenAI API key in [config.py](LLM-based_usability_evaluation/config.py)
 
-def get_api_key(self):
+def get_api_key(self): \\
     return "YOUR_API_KEY"  # Replace with your actual API key
 
 #### Running the Program
-cd LLM-based_usability_evaluation
+cd LLM-based_usability_evaluation \\
 python3 main.py
 
 ## Performance Evaluation

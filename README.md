@@ -49,7 +49,7 @@ This project is a LLM-based usability evaluation framework including an automate
 #### Environment Setup
 pip install langchain openai faiss-cpu langchain-openai pydantic
 
-#### Configure the API key in config.py
+#### Configure the API key in LLM-based%20usability%20evaluation/config.py
 def get_api_key(self):
     return "YOUR_API_KEY"  # Replace with your actual API key
 

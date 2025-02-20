@@ -65,6 +65,19 @@ python3 main.py
 
 We provide all algorithm codes used in our paper.
 
+### GraphX
+
+#### Platform Source Code
+
+[Spark]
+
+#### ALgorithms
+
+1. run `pack.sh` locally to compile the `.scala` file and pack up as a `.jar`
+2. copy and run the `.jar` file with Spark
+
+Algorithms
+
 ### PowerGraph
 
 #### Platform Source Code
@@ -73,22 +86,23 @@ We provide all algorithm codes used in our paper.
 
 #### Algorithms
 
-1. add cpp file to PowerGraph/toolkits/graph_analytics (some are already existed)
+1. add the `.cpp` file to PowerGraph/toolkits/graph_analytics (some are already existed)
 2. add commands in PowerGraph/toolkits/graph_analytics/CMakeLists.txt
 3. compile and run by the platform guidance
 
-PageRank: [PowerGraph/PageRank.sh](Performance%20Evaluation/PowerGraph/PageRank.sh)
+PageRank: [[Code]](Performance%20Evaluation/PowerGraph/PageRank.cpp) [[Command]](Performance%20Evaluation/PowerGraph/PageRank.sh)
 
-SSSP: [PowerGraph/SSSP.sh](Performance%20Evaluation/PowerGraph/SSSP.sh)
+SSSP: [[Code]](Performance%20Evaluation/PowerGraph/SSSP.cpp) [[Command]](Performance%20Evaluation/PowerGraph/SSSP.sh)
 
-Triangle Counting: [PowerGraph/TriangleCounting.sh](Performance%20Evaluation/PowerGraph/TriangleCounting.sh)
+Triangle Counting: [[Code]](Performance%20Evaluation/PowerGraph/TriangleCounting.cpp) [[Command]](Performance%20Evaluation/PowerGraph/TriangleCounting.sh)
 
-Connected Component: [PowerGraph/ConnectedComponent.sh](Performance%20Evaluation/PowerGraph/ConnectedComponent.sh)
+Connected Component: [[Code]](Performance%20Evaluation/PowerGraph/ConnectedComponent.cpp) [[Command]](Performance%20Evaluation/PowerGraph/ConnectedComponent.sh)
 
-Betweenness: [PowerGraph/Betweenness.sh](Performance%20Evaluation/PowerGraph/Betweenness.sh)
+Betweenness: [[Code]](Performance%20Evaluation/PowerGraph/Betweenness.cpp) [[Command]](Performance%20Evaluation/PowerGraph/Betweenness.sh)
 
-LPA: [PowerGraph/LPA.sh](Performance%20Evaluation/PowerGraph/LPA.sh)
+LPA: [[Code]](Performance%20Evaluation/PowerGraph/LPA.cpp) [[Command]](Performance%20Evaluation/PowerGraph/LPA.sh)
 
-K-Core: [PowerGraph/K-Core.sh](Performance%20Evaluation/PowerGraph/K-Core.sh)
+K-Core: [[Code]](Performance%20Evaluation/PowerGraph/K-Core.cpp)
+[[Command]](Performance%20Evaluation/PowerGraph/K-Core.sh)
 
-K-Clique: [PowerGraph/K-Clique.sh](Performance%20Evaluation/PowerGraph/K-Clique.sh)
+K-Clique: [[Code]](Performance%20Evaluation/PowerGraph/K-Clique.cpp) [[Command]](Performance%20Evaluation/PowerGraph/K-Clique.sh)

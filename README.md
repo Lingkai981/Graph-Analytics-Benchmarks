@@ -67,6 +67,16 @@ We provide all algorithm codes used in our paper.
 
 ### PowerGraph
 
+#### Platform Source Code
+
+[PowerGraph](https://github.com/jegonzal/PowerGraph)
+
+#### Algorithms
+
+1. add cpp file to PowerGraph/toolkits/graph_analytics (some are already existed)
+2. add commands in PowerGraph/toolkits/graph_analytics/CMakeLists.txt
+3. compile and run by the platform guidance
+
 PageRank: [PowerGraph/PageRank.sh](Performance%20Evaluation/PowerGraph/PageRank.sh)
 
 SSSP: [PowerGraph/SSSP.sh](Performance%20Evaluation/PowerGraph/SSSP.sh)

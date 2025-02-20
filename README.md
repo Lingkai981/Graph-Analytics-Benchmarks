@@ -47,8 +47,9 @@ This project is a LLM-based usability evaluation framework including an automate
 ### Quick Start
 
 #### Environment Setup
+```shell
 pip install langchain openai faiss-cpu langchain-openai pydantic
-
+```
 #### Configure the API key
 Modify the OpenAI API key in [config.py](LLM-based_usability_evaluation/config.py)
 ```shell

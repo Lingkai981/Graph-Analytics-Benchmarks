@@ -50,11 +50,15 @@ This project is a LLM-based usability evaluation framework including an automate
 ```shell
 pip install langchain openai faiss-cpu langchain-openai pydantic
 ```
-#### Configure the API key
-Modify the OpenAI API key in [config.py](LLM-based_usability_evaluation/config.py)
+#### Set the OpenAI API key as an environment variable:
+Open your terminal and add the following line to your shell configuration file (.bashrc, .zshrc, etc.):
 ```shell
-def get_api_key(self):  
-    return "YOUR_API_KEY"  # Replace with your actual API key
+export OPENAI_API_KEY="your-api-key-here"
+```
+Reload the shell configuration:
+```shell
+source ~/.bashrc   # If you use bash
+source ~/.zshrc    # If you use zsh
 ```
 #### Running the Program
 ```shell

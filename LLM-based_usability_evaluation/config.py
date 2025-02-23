@@ -85,7 +85,7 @@ class Config:
         }}"""
 
     def get_api_key(self):
-        return "sk-Ju5mgiiKnUAN91KiEV1QAxY6XMaq6ZGUe5sRLnG0WBw2Kybf"
+        return os.getenv('OPENAI_API_KEY')
     
     def get_algorithm_name(self):
         return {

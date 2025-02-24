@@ -1,12 +1,13 @@
+# Replace '/apsara/GraphBenchmark/', '/apsara/GraphBenchmark/flash/scratch/gfs/' and '/home/admin/' with the actual paths.
+
 scale=8
 
 for dataset in Standard Density Diameter; do
     for threads in 1 2 4 8 16 32; do
         machines=1
-        echo "TC $dataset   $machines machines   $threads threads    $((machines*threads)) total progresses"
-        mpiexec -n $((machines*threads)) --bind-to core --mca btl_tcp_if_include bond0 \
-            /home/admin/graphlab/release/toolkits/graph_analytics/undirected_triangle_count --format snap \
-            --graph /apsara/GraphBenchmarkDatasets/powergraph-edges-${scale}-${dataset}.txt \
+        echo "TriangleCounting $dataset   $machines machines   $threads threads    $((machines*threads)) total progresses"
+        ./format.sh $threads /apsara/GraphBenchmark/flash-edges-${scale}-${dataset}/ /apsara/GraphBenchmark/flash/scratch/gfs/ flash-edges-${scale}-${dataset}
+        mpirun --mca btl ^openib --mca btl_tcp_if_include bond0 -np $threads ./TriangleCounting /apsara/GraphBenchmark/flash/scratch/gfs/ flash-edges-${scale}-${dataset} \
             2>&1 \
             | awk '{ print strftime("[%Y-%m-%d %H:%M:%S]"), $0; fflush(); }' \
             > log_${dataset}_${machines}machines_${threads}threads.txt
@@ -14,20 +15,19 @@ for dataset in Standard Density Diameter; do
 done
 
 for ((id = 0;id <= 15; id++)); do
-    echo "GraphExperiment${id} slots=${threads}" | tee -a ../machines.txt
+    echo "GraphExperiment${id} slots=${threads}" | tee -a host_file
 done
 for slave in GraphExperiment0 GraphExperiment1 GraphExperiment2 GraphExperiment3 GraphExperiment4 GraphExperiment5 GraphExperiment6 GraphExperiment7 GraphExperiment8 GraphExperiment9 GraphExperiment10 GraphExperiment11 GraphExperiment12 GraphExperiment13 GraphExperiment14 GraphExperiment15; do   
-    scp -r /home/admin/graphlab/machines.txt admin@$slave:/home/admin/graphlab/
+    scp -r /home/admin/flash/run/host_file admin@$slave:/home/admin/flash/run/
 done
 
 for dataset in Standard Density Diameter; do
     for machines in 1 2 4 8 16; do
         threads=32
 
-        echo "TC $dataset   $machines machines   $threads threads    $((machines*threads)) total progresses"
-        mpiexec -n $((machines*threads)) --bind-to core --mca btl_tcp_if_include bond0 --hostfile ../machines.txt \
-            /home/admin/graphlab/release/toolkits/graph_analytics/undirected_triangle_count --format snap \
-            --graph /apsara/GraphBenchmarkDatasets/powergraph-edges-${scale}-${dataset}.txt \
+        echo "TriangleCounting $dataset   $machines machines   $threads threads    $((machines*threads)) total progresses"
+        ./format1.sh $((machines*threads)) /apsara/GraphBenchmark/flash-edges-${scale}-${dataset}/ /apsara/GraphBenchmark/flash/scratch/gfs/ flash-edges-${scale}-${dataset} /home/admin/flash/run/host_file
+        mpirun --bind-to core --mca btl ^openib --mca btl_tcp_if_include bond0 -np $((machines*threads)) -hostfile /home/admin/flash/run/host_file ./TriangleCounting /apsara/GraphBenchmark/flash/scratch/gfs/ flash-edges-${scale}-${dataset} \
             2>&1 \
             | awk '{ print strftime("[%Y-%m-%d %H:%M:%S]"), $0; fflush(); }' \
             > log_${dataset}_${machines}machines_${threads}threads.txt

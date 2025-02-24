@@ -1,27 +1,35 @@
-#include "../core/flash2.h"
+# Replace '/apsara/GraphBenchmark/', '/apsara/GraphBenchmark/flash/scratch/gfs/' and '/home/admin/' with the actual paths.
 
-int main(int argc, char *argv[]) {
-	VertexType(float,dis);
-	SetDataset(argv[1], argv[2]);
-	int s = atoi(argv[3]);
+scale=8
 
-	VSet A=All.Local(v.dis=(v_id==s?0:-1)).Filter(v_id==s);
+for dataset in Standard Density Diameter; do
+    for threads in 1 2 4 8 16 32; do
+        machines=1
+        echo "SSSP $dataset   $machines machines   $threads threads    $((machines*threads)) total progresses"
+        ./format.sh $threads /apsara/GraphBenchmark/flash-edges-${scale}-${dataset}/ /apsara/GraphBenchmark/flash/scratch/gfs/ flash-sssp-edges-${scale}-${dataset}
+        mpirun --mca btl ^openib --mca btl_tcp_if_include bond0 -np $threads ./SSSP /apsara/GraphBenchmark/flash/scratch/gfs/ flash-sssp-edges-${scale}-${dataset} 0 \
+            2>&1 \
+            | awk '{ print strftime("[%Y-%m-%d %H:%M:%S]"), $0; fflush(); }' \
+            > log_${dataset}_${machines}machines_${threads}threads.txt
+    done
+done
 
-	for(int len = A.size(), i = 0; len > 0; len = A.size(), ++i) {
-		print("Round %d: size=%d\n", i, len);
-		if(len > n_vertex/50) A = All.Pull(for_nb(if(nb.dis>-0.5 && (v.dis<0 || nb.dis+1<v.dis)) v.dis=nb.dis+1));
-		else A = A.Push(for_nb(
-					if(nb.dis<0 || v.dis+1<nb.dis)
-						push_to(nb_id, _v.dis=-1, if(_v.dis<0 || v.dis+1<_v.dis) _v.dis=v.dis+1)
-				), if(dst.dis<0 || _v.dis<dst.dis) dst.dis=_v.dis);
-	}
+for ((id = 0;id <= 15; id++)); do
+    echo "GraphExperiment${id} slots=${threads}" | tee -a host_file
+done
+for slave in GraphExperiment0 GraphExperiment1 GraphExperiment2 GraphExperiment3 GraphExperiment4 GraphExperiment5 GraphExperiment6 GraphExperiment7 GraphExperiment8 GraphExperiment9 GraphExperiment10 GraphExperiment11 GraphExperiment12 GraphExperiment13 GraphExperiment14 GraphExperiment15; do   
+    scp -r /home/admin/flash/run/host_file admin@$slave:/home/admin/flash/run/
+done
 
-	print( "total time=%0.3lf secs\n", GetTime());
-	//All.Gather(printf("id=%d,dis=%0.1f\n", v_id, v.dis));
+for dataset in Standard Density Diameter; do
+    for machines in 1 2 4 8 16; do
+        threads=32
 
-	float td = 0;
-	All.Local(if(v.dis>1e-8) td += v.dis); td = Sum(td);
-	print("sum_dis=%0.3f\n", td);
-	return 0;
-	
-}
+        echo "SSSP $dataset   $machines machines   $threads threads    $((machines*threads)) total progresses"
+        ./format1.sh $((machines*threads)) /apsara/GraphBenchmark/flash-edges-${scale}-${dataset}/ /apsara/GraphBenchmark/flash/scratch/gfs/ flash-sssp-edges-${scale}-${dataset} /home/admin/flash/run/host_file
+        mpirun --bind-to core --mca btl ^openib --mca btl_tcp_if_include bond0 -np $((machines*threads)) -hostfile /home/admin/flash/run/host_file ./SSSP /apsara/GraphBenchmark/flash/scratch/gfs/ flash-sssp-edges-${scale}-${dataset} 0 \
+            2>&1 \
+            | awk '{ print strftime("[%Y-%m-%d %H:%M:%S]"), $0; fflush(); }' \
+            > log_${dataset}_${machines}machines_${threads}threads.txt
+    done
+done

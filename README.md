@@ -119,7 +119,7 @@ K-Clique: [[Code]](Performance%20Evaluation/PowerGraph/K-Clique.cpp) [[Command]]
 
 #### Algorithms
 
-1. add the `.C` file to ligra/apps (some are already existed)
+1. add the `.C` file to ligra/apps/ (some are already existed)
 2. update the file name in ligra/apps/Makefile
 ```shell
 ALL= <file name>
@@ -128,7 +128,8 @@ ALL= <file name>
 ```shell
 setWorkers(Number_of_Threads);
 ```
-4. compile and run by the platform guidance
+4. add `.sh` file in ligra/apps/
+5. compile and run by the platform guidance
 
 PageRank: [[Code]](Performance%20Evaluation/Ligra/PageRank.C) [[Command]](Performance%20Evaluation/Ligra/PageRank.sh)
 
@@ -157,7 +158,8 @@ K-Clique: [[Code]](Performance%20Evaluation/Ligra/K-Clique.C) [[Command]](Perfor
 
 1. add the `.cpp` file to flash/src/apps/ (some are already existed)
 2. add `flash2.h` file to flash/src/core/
-3. compile and run by the platform guidance
+3. add `.sh` file in flash/run/
+4. compile and run by the platform guidance
 
 PageRank: [[Code]](Performance%20Evaluation/Flash/PageRank.cpp) [[Command]](Performance%20Evaluation/Flash/PageRank.sh)
 

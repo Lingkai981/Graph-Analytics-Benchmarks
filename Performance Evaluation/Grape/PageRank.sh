@@ -1,4 +1,4 @@
-# Replace '/apsara/GraphBenchmark/', '/apsara/GraphBenchmark/flash/scratch/gfs/' and '/home/admin/' with the actual paths.
+# Replace '/apsara/GraphBenchmarkDatasets/grape_data/' and '/home/admin/' with the actual paths.
 
 scale=8
 
@@ -6,8 +6,7 @@ for dataset in Standard Density Diameter; do
     for threads in 1 2 4 8 16 32; do
         machines=1
         echo "PageRank $dataset   $machines machines   $threads threads    $((machines*threads)) total progresses"
-        ./format.sh $threads /apsara/GraphBenchmark/flash-edges-${scale}-${dataset}/ /apsara/GraphBenchmark/flash/scratch/gfs/ flash-edges-${scale}-${dataset}
-        mpirun --mca btl ^openib --mca btl_tcp_if_include bond0 -np $threads ./PageRank /apsara/GraphBenchmark/flash/scratch/gfs/ flash-edges-${scale}-${dataset} \
+        mpirun --bind-to none --mca btl_tcp_if_include bond0 -np $threads ./run_app --app_concurrency 1 --vfile /apsara/GraphBenchmarkDatasets/grape_data/grape-edges-${scale}-${dataset}.v --efile /apsara/GraphBenchmarkDatasets/grape_data/grape-edges-${scale}-${dataset}.e --application pagerank --bfs_source 0 --sssp_source 0 --pr_d 0.85 --pr_mr 10 --cdlp_mr 10 --opt  \
             2>&1 \
             | awk '{ print strftime("[%Y-%m-%d %H:%M:%S]"), $0; fflush(); }' \
             > log_${dataset}_${machines}machines_${threads}threads.txt
@@ -18,7 +17,7 @@ for ((id = 0;id <= 15; id++)); do
     echo "GraphExperiment${id} slots=${threads}" | tee -a host_file
 done
 for slave in GraphExperiment0 GraphExperiment1 GraphExperiment2 GraphExperiment3 GraphExperiment4 GraphExperiment5 GraphExperiment6 GraphExperiment7 GraphExperiment8 GraphExperiment9 GraphExperiment10 GraphExperiment11 GraphExperiment12 GraphExperiment13 GraphExperiment14 GraphExperiment15; do   
-    scp -r /home/admin/flash/run/host_file admin@$slave:/home/admin/flash/run/
+    scp -r /home/admin/grape/build/host_file admin@$slave:/home/admin/grape/build/
 done
 
 for dataset in Standard Density Diameter; do
@@ -26,8 +25,7 @@ for dataset in Standard Density Diameter; do
         threads=32
 
         echo "PageRank $dataset   $machines machines   $threads threads    $((machines*threads)) total progresses"
-        ./format1.sh $((machines*threads)) /apsara/GraphBenchmark/flash-edges-${scale}-${dataset}/ /apsara/GraphBenchmark/flash/scratch/gfs/ flash-edges-${scale}-${dataset} /home/admin/flash/run/host_file
-        mpirun --bind-to core --mca btl ^openib --mca btl_tcp_if_include bond0 -np $((machines*threads)) -hostfile /home/admin/flash/run/host_file ./PageRank /apsara/GraphBenchmark/flash/scratch/gfs/ flash-edges-${scale}-${dataset} \
+        mpirun --bind-to none --mca btl_tcp_if_include bond0 -np $machines --hostfile /home/admin/grape/build/host_file ./run_app --app_concurrency 32 --vfile /apsara/GraphBenchmarkDatasets/grape_data/grape-edges-${scale}-${dataset}.v --efile /apsara/GraphBenchmarkDatasets/grape_data/grape-edges-${scale}-${dataset}.e --application pagerank --bfs_source 0 --sssp_source 0 --pr_d 0.85 --pr_mr 10 --cdlp_mr 10 --opt  \
             2>&1 \
             | awk '{ print strftime("[%Y-%m-%d %H:%M:%S]"), $0; fflush(); }' \
             > log_${dataset}_${machines}machines_${threads}threads.txt

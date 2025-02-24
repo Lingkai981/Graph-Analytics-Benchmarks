@@ -218,9 +218,9 @@ K-Clique: [[Code]](Performance%20Evaluation/Grape/kclique/) [[Command]](Performa
 #### Algorithms
 
 
-2. add `.sh` file in the algorithm folder provided
-3. update the input file path in `run.cpp`
-4. compile and run by the platform guidance
+1. add `.sh` file in the algorithm folder provided
+2. update the file path in `Makefile`
+3. compile and run by the platform guidance
 
 PageRank: [[Code]](Performance%20Evaluation/Pregel+/pagerank/) [[Command]](Performance%20Evaluation/Pregel+/PageRank.sh)
 

@@ -1,6 +1,6 @@
 # 图计算系统选型难？大语言模型来助力 ——全新评测框架被SIGMOD 2025接收
 
-我们的研究论文 “Revisiting Graph Analytics Benchmarks” 成功被SIGMOD 2025（2025 ACM SIGMOD International Conference on Management of Data）接收！
+我们的研究论文 “Revisiting Graph Analytics Benchmarks” 成功被SIGMOD 2025（2025 ACM International Conference on Management of Data）接收！
 SIGMOD作为数据库领域最为优秀的学术会议之一，每年吸引着众多来自学术界和工业界的顶尖研究成果。
 
 图计算平台通过分布式和多线程的架构，实现了图计算的并行能力。为了评估不同的图计算平台的表现，亟需构建系统化的基准测试体系。现有的主流图基准测试工具，LDBC Graphalytics，使用LDBC-DG生成数据集，并使用六个算法对计算平台进行性能评估。然而，LDBC Graphalytics依然存在一些不足之处：

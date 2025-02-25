@@ -1,4 +1,4 @@
-# 图计算系统选型难？大语言模型来助力 ——全新评测框架被SIGMOD 2025接收
+# 图计算系统选择难？大语言模型来助力 ——全新评测框架被SIGMOD 2025接收
 
 近日，GraphScope 团队与上海交通大学林学民教授团队合作的论文《Revisiting Graph Analytics Benchmarks》成功被SIGMOD 2025（2025 ACM International Conference on Management of Data）接收！
 SIGMOD作为数据库领域最为优秀的学术会议之一，每年吸引着众多来自学术界和工业界的顶尖研究成果。

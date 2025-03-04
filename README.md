@@ -73,14 +73,44 @@ We provide all algorithm codes used in our paper.
 
 #### Platform Source Code
 
-[Spark]
+[Spark](https://github.com/apache/spark) [GraphX](https://github.com/apache/spark/tree/master/graphx)
 
 #### ALgorithms
 
 1. run `pack.sh` locally to compile the `.scala` file and pack up as a `.jar`
-2. copy and run the `.jar` file with Spark
+2. copy the `.jar` to the Spark platform
+3. run `.sh` file to run the `.jar` file with Spark
 
-Algorithms
+We also provide the `.jar` file for quick test.
+
+PageRank: [[Code]](Performance%20Evaluation/GraphX/PageRankExample/src/main/scala) [[Packing]](Performance%20Evaluation/GraphX/PageRankExample/pack.sh) [[`.jar` file]](Performance%20Evaluation/GraphX/PageRankExample/pagerankexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/PageRankExample/pagerank.sh)
+
+
+SSSP: [[Code]](Performance%20Evaluation/GraphX/SSSPExample/src/main/scala) [[Packing]](Performance%20Evaluation/GraphX/SSSPExample/pack.sh) [[`.jar` file]](Performance%20Evaluation/GraphX/SSSPExample/ssspexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/SSSPExample/sssp.sh)
+
+
+Triangle Counting: [[Code]](Performance%20Evaluation/GraphX/TriangleCountingExample/src/main/scala) [[Packing]](Performance%20Evaluation/GraphX/TriangleCountingExample/pack.sh) [[`.jar` file]](Performance%20Evaluation/GraphX/TriangleCountingExample/trianglecountingexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/TriangleCountingExample/trianglecounting.sh)
+
+
+Connnected Component: [[Code]](Performance%20Evaluation/GraphX/ConnectedComponentExample/src/main/scala) [[Packing]](Performance%20Evaluation/GraphX/ConnectedComponentExample/pack.sh) [[`.jar` file]](Performance%20Evaluation/GraphX/ConnectedComponentExample/connectedcomponentexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/ConnectedComponentExample/connectedcomponent.sh)
+
+
+Betweenness: [[Code]](Performance%20Evaluation/GraphX/BetweennessCentralityExample/src/main/scala) [[Packing]](Performance%20Evaluation/GraphX/BetweennessCentralityExample/pack.sh) [[`.jar` file]](Performance%20Evaluation/GraphX/BetweennessCentralityExample/betweennesscentralityexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/BetweennessCentralityExample/betweennesscentrality.sh)
+
+
+
+LPA: [[Code]](Performance%20Evaluation/GraphX/LabelPropagationExample/src/main/scala) [[Packing]](Performance%20Evaluation/GraphX/LabelPropagationExample/pack.sh) [[`.jar` file]](Performance%20Evaluation/GraphX/LabelPropagationExample/labelpropagationexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/LabelPropagationExample/labelpropagation.sh)
+
+
+K-Core: [[Code]](Performance%20Evaluation/GraphX/CoreExample/src/main/scala) [[Packing]](Performance%20Evaluation/GraphX/CoreExample/pack.sh) [[`.jar` file]](Performance%20Evaluation/GraphX/CoreExample/coreexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/CoreExample/core.sh)
+
+
+K-Clique: [[Code]](Performance%20Evaluation/GraphX/KCliqueExample/src/main/scala) [[Packing]](Performance%20Evaluation/GraphX/KCliqueExample/pack.sh) [[`.jar` file]](Performance%20Evaluation/GraphX/KCliqueExample/kcliqueexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/KCliqueExample/kclique.sh)
+
+
+
+
+
 
 ### PowerGraph
 
@@ -217,7 +247,6 @@ K-Clique: [[Code]](Performance%20Evaluation/Grape/kclique/) [[Command]](Performa
 
 #### Algorithms
 
-
 1. add `.sh` file in the algorithm folder provided
 2. update the file path in `Makefile`
 3. compile and run by the platform guidance
@@ -235,3 +264,21 @@ Betweenness: [[Code]](Performance%20Evaluation/Pregel+/betweenness/) [[Command]]
 LPA: [[Code]](Performance%20Evaluation/Pregel+/lpa/) [[Command]](Performance%20Evaluation/Pregel+/LPA.sh)
 
 K-Clique: [[Code]](Performance%20Evaluation/Pregel+/clique/) [[Command]](Performance%20Evaluation/Pregel+/K-Clique.sh)
+
+
+### G-Thinker
+
+#### Platform Source Code
+
+[G-Thinker](https://yanlab19870714.github.io/yanda/gthinker/run.html)
+
+#### Algorithms
+
+1. download the platform according to the guidance
+2. modify `run.cpp` with the specific algorithm code
+3. run `.sh` file
+
+Triangle Counting: [[Code]](Performance%20Evaluation/G-Thinker/TriangleCounting.cpp) [[Command]](Performance%20Evaluation/G-Thinker/TriangleCounting.sh)
+
+
+K-Clique: [[Code]](Performance%20Evaluation/G-Thinker/K-CLique.cpp) [[Command]](Performance%20Evaluation/G-Thinker/K-Clique.sh)

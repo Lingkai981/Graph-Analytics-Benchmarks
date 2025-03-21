@@ -237,7 +237,7 @@ int main(int argc, char** argv) {
     }   else {
         assert(0);
     }
-    printf("Generating graph with %d vetices, TYPE = %s, FEATURE = %s\n", N, TYPE.c_str(), FEATURE.c_str());
+    printf("Generating graph with %ld vetices, TYPE = %s, FEATURE = %s\n", N, TYPE.c_str(), FEATURE.c_str());
     double alpha = 1000.0;
     int group_size = N;
     if (FEATURE == "Density") {
@@ -358,7 +358,7 @@ int main(int argc, char** argv) {
         M += graph[i].size();
         // M += degree[i];
     }
-    printf("Output. Totally %d verices and %d edges.\n", N, M);
+    printf("Output. Totally %ld verices and %ld edges.\n", N, M);
 
     if (TYPE == "flash") {
         output_snap("flash");

@@ -51,8 +51,7 @@ std::string itoa(int x) {
 }
 
 void output_snap(std::string framework) {
-    // std::fstream ofs("./" + framework + "-edges-" + itoa(SCALE) + "-" + FEATURE + ".txt", std::ios::out);
-    std::fstream ofs("/apsara/GraphBenchmarkDatasets/" + framework + "-edges-" + itoa(SCALE) + "-" + FEATURE + ".txt", std::ios::out);
+    std::fstream ofs("./" + framework + "-edges-" + itoa(SCALE) + "-" + FEATURE + ".txt", std::ios::out);
     for (int i = 0; i < N; ++i) {
         for (auto &j : graph[i]) {
             if (j > i) {
@@ -64,7 +63,6 @@ void output_snap(std::string framework) {
 
 void output_snap_weight(std::string framework) {
     std::fstream ofs("./" + framework + "-edges-" + itoa(SCALE) + "-" + FEATURE + ".txt", std::ios::out);
-    // std::fstream ofs("/apsara/GraphBenchmark/flash/Standard10_sssp/graph.txt", std::ios::out);
     for (int i = 0; i < N; ++i) {
         for (auto &j : graph[i]) {
             if (j > i) {
@@ -76,8 +74,7 @@ void output_snap_weight(std::string framework) {
 }
 
 void output_adj(std::string framework) {
-    // std::fstream ofs("./" + framework + "-adj-" + itoa(SCALE) + "-" + FEATURE + ".txt", std::ios::out);
-    std::fstream ofs("/apsara/GraphBenchmarkDatasets/pregel+-adj-10-Standard.txt", std::ios::out);
+    std::fstream ofs("./" + framework + "-adj-" + itoa(SCALE) + "-" + FEATURE + ".txt", std::ios::out);
     for (int i = 0; i < N; ++i) {
         ofs << i << "\t" << graph[i].size();
         for (auto &j : graph[i]) {
@@ -121,7 +118,7 @@ void output_powergraph_bc(std::string framework) {
 }
 
 void output_ligra(std::string framework) {
-    std::fstream ofs(framework + "-adj-" + itoa(SCALE) + "-" + FEATURE + ".txt", std::ios::out);
+    std::fstream ofs("./" + framework + "-adj-" + itoa(SCALE) + "-" + FEATURE + ".txt", std::ios::out);
     ofs << "AdjacencyGraph" << '\n';
     
     uint64_t num = 0;
@@ -161,7 +158,7 @@ void output_ligra(std::string framework) {
 }
 
 void output_ligra_sssp(std::string framework) {
-    std::fstream ofs(framework + "-adj-" + itoa(SCALE) + "-" + FEATURE + ".txt", std::ios::out);
+    std::fstream ofs("./" + framework + "-adj-" + itoa(SCALE) + "-" + FEATURE + ".txt", std::ios::out);
     ofs << "WeightedAdjacencyGraph" << '\n';
     
     uint64_t num = 0;

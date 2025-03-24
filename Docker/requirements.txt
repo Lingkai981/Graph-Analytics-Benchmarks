@@ -1,0 +1,6 @@
+langchain
+openai
+faiss-cpu
+langchain-openai
+pydantic
+langchain_community

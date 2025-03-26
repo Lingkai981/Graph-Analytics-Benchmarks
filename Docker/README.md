@@ -15,18 +15,13 @@ docker load -i llm-eval.tar
 ### Running the Program
 ```shell
 docker run --rm \
-  -e OPENAI_API_KEY=sk-xxx \
-  -e PLATFORM=Ligra \
-  -e ALGORITHM=PageRank \
+  -e OPENAI_API_KEY=<your OPENAI_API_KEY> \
+  -e PLATFORM=<your platform> \
+  -e ALGORITHM=<your algorithm> \
   llm-eval
 ```
+or
 
 ```shell
-docker run --rm \
-  -e OPENAI_API_KEY=sk-xxx \
-  llm-eval Ligra PageRank
-```
-
-```shell
-docker run -it --rm -e OPENAI_API_KEY=sk-xxx llm-eval
+docker run -it --rm -e OPENAI_API_KEY=<your OPENAI_API_KEY> llm-eval
 ```

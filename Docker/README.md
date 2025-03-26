@@ -6,10 +6,11 @@ This project is a LLM-based usability evaluation framework including an automate
 ## Quick Start
 
 #### Environment Setup
+Download Docker image file [llm-eval.tar]()
 ```shell
 # docker pull python:3.10-slim
 # docker build -t llm-eval .
-docker load -i [llm-eval.tar]()
+docker load -i llm-eval.tar
 ```
 ### Running the Program
 ```shell

@@ -75,8 +75,15 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
 - **Containerization**: Docker
 - **Job Orchestration**: Kubeflow MPIJob for distributed runs
 
-#### Usage
+### Usage
 
 ```bash
 ./run.sh <ALGORITHM> <PATH_TO_DATASET_DIRECTORY>
 ```
+### Platforms and Configurations
+
+1. **FLASH**
+   - Docker image: [flash-mpi:v0.3]()
+   - Dataset format: Edge list file named `flash-sssp-edges-{SCALE}-{FEATURE}` for the sssp algorithm, such as `flash-sssp-edges-8-Standard`, and named `flash-edges-{SCALE}-{FEATURE}` for the other algorithms, such as `flash-edges-8-Standard`.
+   - Supported algorithms: pagerank, sssp, triangle, lpa, k-core-search, clique, cc.
+

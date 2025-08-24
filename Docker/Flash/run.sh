@@ -2,7 +2,7 @@
 
 # === Argument Check ===
 if [ "$#" -ne 2 ]; then
-    echo "Usage: $0 <ALGORITHM> <HOST_PATH>"
+    echo "Usage: $0 <ALGORITHM> <PATH_TO_DATASET_DIRECTORY>"
     exit 1
 fi
 

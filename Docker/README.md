@@ -78,7 +78,6 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
 
 #### FLASH
 
-- **Docker Image**: [flash-mpi:v0.3]()
 - **Dataset Format**: The dataset is organized in folders named according to the following patterns:
   - For the **SSSP** algorithm: `flash-sssp-edges-{SCALE}-{FEATURE}` (e.g., `flash-sssp-edges-8-Standard`)
   - For other algorithms: `flash-edges-{SCALE}-{FEATURE}` (e.g., `flash-edges-8-Standard`)
@@ -98,25 +97,24 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
   - `cc`
   - `bc`
 
-- **Download Datasets**:  
-   Download the relevant dataset folder to every machine where you want to run the algorithms. Ensure the datasets are stored in the **same location** on all machines.
-  - [flash-edges-8-Standard]()
-  - [flash-edges-9-Standard]()
-  - [flash-edges-8-Density]()
-  - [flash-edges-9-Density]()
-  - [flash-edges-8-Diameter]()
-  - [flash-edges-9-Diameter]()
-  - [flash-edges-sssp-8-Standard]()
-  - [flash-edges-sssp-9-Standard]()
-  - [flash-edges-sssp-8-Density]()
-  - [flash-edges-sssp-9-Density]()
-  - [flash-edges-sssp-8-Diameter]()
-  - [flash-edges-sssp-9-Diameter]()
-
 - **Run Flash**:  
    After downloading the datasets, follow these steps to run the algorithm:
 
-   - Go to the Flash directory on the machine.
+   - Download and load the Docker image [flash-mpi:v0.4]() on all machines.
+   - On all machines, create identical folders to store datasets. Then, download the following datasets and place them into these folders.
+      - [flash-edges-8-Standard]()
+      - [flash-edges-9-Standard]()
+      - [flash-edges-8-Density]()
+      - [flash-edges-9-Density]()
+      - [flash-edges-8-Diameter]()
+      - [flash-edges-9-Diameter]()
+      - [flash-edges-sssp-8-Standard]()
+      - [flash-edges-sssp-9-Standard]()
+      - [flash-edges-sssp-8-Density]()
+      - [flash-edges-sssp-9-Density]()
+      - [flash-edges-sssp-8-Diameter]()
+      - [flash-edges-sssp-9-Diameter]()
+
    - Execute the following command to run the desired algorithm:
 
      ```bash

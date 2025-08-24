@@ -76,7 +76,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
 
 ### Platforms and Configurations
 
-#### FLASH
+#### Flash
 
 - **Dataset Format**: The dataset is organized in folders named according to the following patterns:
   - For the **SSSP** algorithm: `flash-sssp-edges-{SCALE}-{FEATURE}` (e.g., `flash-sssp-edges-8-Standard`)
@@ -126,3 +126,36 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
      - `<PATH_TO_DATASET_DIRECTORY>`: Provide the path to the directory where the dataset is stored (e.g., `/path/to/flash-sssp-edges-8-Standard`).
 
 
+#### Ligra
+
+- **Dataset Format**:  
+  The dataset for Ligra is provided as a **single edge list file** in `.txt` format.  
+  Example: `ligra-edges-8-Standard.txt`, `ligra-edges-9-Density.txt`.
+
+- **Supported Algorithms**:  
+  - `pagerank`
+  - `sssp`
+  - `triangle`
+  - `cc`
+  - `bc`
+
+- **Run Ligra**:  
+   After downloading the datasets, follow these steps to run the algorithm on a **single machine**:
+
+   1. Download and load the Docker image [ligra:v0.1]() on the machine.  
+   2. Create a folder to store datasets. Then, download the following datasets and place them into this folder:
+      - [ligra-edges-8-Standard.txt]()
+      - [ligra-edges-9-Standard.txt]()
+      - [ligra-edges-8-Density.txt]()
+      - [ligra-edges-9-Density.txt]()
+      - [ligra-edges-8-Diameter.txt]()
+      - [ligra-edges-9-Diameter.txt]()
+   3. Execute the following command to run the desired algorithm:
+
+      ```bash
+      cd Ligra
+      ./run.sh <ALGORITHM> <PATH_TO_DATASET_FILE>
+      ```
+
+      - `<ALGORITHM>`: Replace with the name of the algorithm you want to run (e.g., `sssp`, `pagerank`, etc.).
+      - `<PATH_TO_DATASET_FILE>`: Provide the path to the dataset file (e.g., `/path/to/ligra-edges-8-Standard.txt`).

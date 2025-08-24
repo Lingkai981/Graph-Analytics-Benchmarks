@@ -127,10 +127,6 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
 
      - `<ALGORITHM>`: Replace with the name of the algorithm you want to run (e.g., `sssp`, `pagerank`, etc.).
      - `<PATH_TO_DATASET_DIRECTORY>`: Provide the path to the directory where the dataset is stored (e.g., `/path/to/flash-sssp-edges-8-Standard`).
-     - The output logs will be generated in the `Flash/output/` folder, with the following naming format:  
-       ```
-       ${ALGORITHM}-${DATASET_NAME}-n${machines}-p${SLOTS_PER_WORKER}.log
-       ```
 
 
 #### Ligra
@@ -164,12 +160,12 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
       - [ligra-adj-9-Density.txt]()
       - [ligra-adj-8-Diameter.txt]()
       - [ligra-adj-9-Diameter.txt]()
-      - [ligra-adj-sssp-8-Standard.txt]()
-      - [ligra-adj-sssp-9-Standard.txt]()
-      - [ligra-adj-sssp-8-Density.txt]()
-      - [ligra-adj-sssp-9-Density.txt]()
-      - [ligra-adj-sssp-8-Diameter.txt]()
-      - [ligra-adj-sssp-9-Diameter.txt]()
+      - [ligra-sssp-adj-8-Standard.txt]()
+      - [ligra-sssp-adj-9-Standard.txt]()
+      - [ligra-sssp-adj-8-Density.txt]()
+      - [ligra-sssp-adj-9-Density.txt]()
+      - [ligra-sssp-adj-8-Diameter.txt]()
+      - [ligra-sssp-adj-9-Diameter.txt]()
         
    3. Execute the following command to run the desired algorithm:
 
@@ -180,7 +176,3 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
 
       - `<ALGORITHM>`: Replace with the name of the algorithm you want to run (e.g., `BellmanFord`, `PageRank`, etc.).
       - `<PATH_TO_DATASET_FILE>`: Provide the path to the dataset file (e.g., `/path/to/ligra-adj-8-Standard.txt`).
-      - The output logs will be generated in the `Ligra/output/` folder, with the following naming format:  
-       ```
-       ${ALGORITHM}-${DATASET_NAME}-n${machines}-p${SLOTS_PER_WORKER}.log
-       ```

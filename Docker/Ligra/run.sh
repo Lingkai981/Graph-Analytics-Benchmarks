@@ -16,7 +16,6 @@ MEMORY=100Gi
 MPI_TEMPLATE="ligra-mpijob-template.yaml"
 
 DATASET_NAME=""
-ALGORITHM_PARAMETER_=0
 
 mkdir output
 
@@ -26,22 +25,14 @@ export HOST_PATH=$HOST_PATH
 
 export ALGORITHM=$ALGORITHM
 
-if [ "$ALGORITHM" = "k-core-search" ]; then
-    ALGORITHM_PARAMETER_=3
-else if [ "$ALGORITHM" = "clique" ]; then
-    ALGORITHM_PARAMETER_=5
-else
-    ALGORITHM_PARAMETER_=0
-fi
-
 # === Single-machine Multi-thread Testing ===
 echo "[INFO] ====== SINGLE MACHINE TESTING ======"
 for dataset in "${DATASETS[@]}"; do
 
-    if [ "$ALGORITHM" = "sssp" ]; then
-        DATASET_NAME="ligra-sssp-edges-8-${dataset}"
+    if [ "$ALGORITHM" = "BellmanFord" ]; then
+        DATASET_NAME="ligra-sssp-adj-8-${dataset}.txt"
     else
-        DATASET_NAME="ligra-edges-8-${dataset}"
+        DATASET_NAME="ligra-adj-8-${dataset}.txt"
     fi
     
 
@@ -50,10 +41,9 @@ for dataset in "${DATASETS[@]}"; do
         export SLOTS_PER_WORKER=$thread
         export REPLICAS=1
         export MPIRUN_NP=$thread
-        export ALGORITHM_PARAMETER=$ALGORITHM_PARAMETER_
         export SINGLE_MACHINE=1
 
-        LOG_FILE="output/${ALGORITHM}-${DATASET_NAME}-n${machines}-p${SLOTS_PER_WORKER}.log"
+        LOG_FILE="output/${ALGORITHM}-${DATASET_NAME}-n1-p${SLOTS_PER_WORKER}.log"
 
         # Generate and submit MPIJob YAML
         envsubst < "$MPI_TEMPLATE" > ligra-mpijob.yaml

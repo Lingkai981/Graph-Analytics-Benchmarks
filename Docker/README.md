@@ -6,18 +6,17 @@ The appendix content is in file “Benchmark_appendix.pdf”.
 
 ## Data Generator
 
-We provide a light cpp program `FFT-DG.cpp` to generate data, which requires three parameters:
+We provide a light cpp program [`FFT-DG.cpp`](Data_Generator/FFT-DG.cpp) to generate data, which requires three parameters:
 >
 Scale: The scale of the dataset choosen from $8, 9, 10$. You can also set your preferred scale with a specific size.
 Platform: The platform of the dataset to control the output format. You can also set your preferred format.
 Feature: The feature of the dataset (*Standard*, *Density* with a higer density, *Diameter* with a larger diameter).
 
 ```shell
-Scale=8
-Platform="graphx"
-Feature="Standard"
-g++ generator.cpp -o generator -O3
-./generator $Scale $Platform $Feature
+scale=8
+framework="graphx"
+g++ FFT-DG.cpp -o generator -O3
+./generator $scale $framework Standard
 ```
 
 We also provide a [LDBC-version of our generator](https://github.com/Lingkai981/Graph-Analytics-Benchmarks/tree/e2377e5a5a1e752ed3db44c58b8c95afc80ae030/renewal_datagen) consists of only a few modification.
@@ -75,15 +74,44 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
 - **Containerization**: Docker
 - **Job Orchestration**: Kubeflow MPIJob for distributed runs
 
-### Usage
-
-```bash
-./run.sh <ALGORITHM> <PATH_TO_DATASET_DIRECTORY>
-```
 ### Platforms and Configurations
 
-1. **FLASH**
-   - Docker image: [flash-mpi:v0.3]()
-   - Dataset format: Edge list file named `flash-sssp-edges-{SCALE}-{FEATURE}` for the sssp algorithm, such as `flash-sssp-edges-8-Standard`, and named `flash-edges-{SCALE}-{FEATURE}` for the other algorithms, such as `flash-edges-8-Standard`.
-   - Supported algorithms: `pagerank`, `sssp`, `triangle`, `lpa`, `k-core-search`, `clique`, `cc`, `bc`.
+#### FLASH
+
+- **Docker Image**: `flash-mpi:v0.3`
+- **Dataset Format**: The dataset is organized in folders named according to the following patterns:
+  - For the **SSSP** algorithm: `flash-sssp-edges-{SCALE}-{FEATURE}` (e.g., `flash-sssp-edges-8-Standard`)
+  - For other algorithms: `flash-edges-{SCALE}-{FEATURE}` (e.g., `flash-edges-8-Standard`)
+  
+  Each folder contains the following files:
+  - `graph.txt`: The graph data in text format.
+  - `graph.idx`: The index file for the graph data.
+  - `graph.dat`: The data file for the graph.
+
+- **Supported Algorithms**: 
+  - `pagerank`
+  - `sssp`
+  - `triangle`
+  - `lpa`
+  - `k-core-search`
+  - `clique`
+  - `cc`
+  - `bc`
+
+- **Download Datasets**:  
+   Download the relevant dataset folder to every machine where you want to run the algorithms. Ensure the datasets are stored in the **same location** on all machines.
+
+- **Run Flash**:  
+   After downloading the datasets, follow these steps to run the desired algorithm:
+
+   - Go to the Flash directory on the machine.
+   - Execute the following command to run the desired algorithm:
+
+     ```bash
+     ./run.sh <ALGORITHM> <PATH_TO_DATASET_DIRECTORY>
+     ```
+
+     - `<ALGORITHM>`: Replace with the name of the algorithm you want to run (e.g., `sssp`, `pagerank`, etc.).
+     - `<PATH_TO_DATASET_DIRECTORY>`: Provide the path to the directory where the dataset is stored (e.g., `/path/to/flash-sssp-edges-8-Standard`).
+
 

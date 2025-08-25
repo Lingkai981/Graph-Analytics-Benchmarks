@@ -104,7 +104,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
      ```bash
      sudo docker load -i flash-mpi-v0.4.tar
      ```
-   2. On all machines, create identical folders to store datasets. Then, download the following datasets and place them into these folders.
+   2. On all machines, create identical folders to store datasets. Then, download the following datasets and place them into these folders:
       - [flash-edges-8-Standard]()
       - [flash-edges-9-Standard]()
       - [flash-edges-8-Density]()
@@ -152,13 +152,13 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
   - `Triangle`
 
 - **Run Ligra**:  
-   After downloading the datasets, follow these steps to run the algorithm on a **single machine**:
+   After downloading the datasets, follow these steps to run the algorithm:
 
-   1. Download and load the Docker image [ligra-mpi-v0.1.tar]() on the machine.
+   1. Download and load the Docker image [ligra-mpi-v0.1.tar]() on all machines.
     ```bash
      sudo docker load -i ligra-mpi-v0.1.tar
      ```
-   2. Create a folder to store datasets. Then, download the following datasets and place them into this folder:
+   2. On all machines, create identical folders to store datasets. Then, download the following datasets and place them into these folders:
       - [ligra-adj-8-Standard.txt]()
       - [ligra-adj-9-Standard.txt]()
       - [ligra-adj-8-Density.txt]()

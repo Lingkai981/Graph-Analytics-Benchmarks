@@ -31,7 +31,7 @@ spec:
               - |
                 set -e
                 echo "[INFO] Waiting for DNS sync..."; sleep 5;
-                time ./${ALGORITHM}${MPIRUN_NP} -rounds 1 -s /opt/data/${DATASET}
+                time ./${ALGORITHM}${MPIRUN_NP} -rounds 1 /opt/data/${DATASET}
                 
             resources:
               limits:

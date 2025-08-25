@@ -185,3 +185,68 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
        ```
        ${ALGORITHM}-${DATASET_NAME}-n${machines}-p${SLOTS_PER_WORKER}.log
        ```
+#### Grape
+
+- **Dataset Format**:  
+  Grape uses a simple vertex/edge list format, typically stored in two separate files.
+    - Vertex File: A file with a .v extension, where each line represents a vertex ID.
+      - Format: for the **sssp** algorithm: `grape-sssp-edges-{SCALE}-{FEATURE}.v` (e.g., `grape-sssp-edges-8-Standard.v`); and for other algorithm: `grape-edges-{SCALE}-{FEATURE}.v` (e.g., `grape-edges-8-Standard.v`).
+    - Edge File: A file with a .e extension, where each line represents a directed edge (and optionally, a weight).
+      - Format: for the **sssp** algorithm: `grape-sssp-edges-{SCALE}-{FEATURE}.e` (e.g., `grape-sssp-edges-8-Standard.e`); and for other algorithm: `grape-edges-{SCALE}-{FEATURE}.e` (e.g., `grape-edges-8-Standard.e`).
+      
+- **Supported Algorithms**:  
+  - `pagerank`
+  - `sssp`
+  - `bc`
+  - `kclique`
+  - `core_decomposition`
+  - `cdlp`
+  - `wcc`
+  - `lcc`
+
+- **Run Grape**:  
+   After downloading the datasets, follow these steps to run the algorithm:
+
+   1. Download and load the Docker image [grape-mpi-v0.1.tar]() on all machines.
+    ```bash
+     sudo docker load -i grape-mpi-v0.1.tar
+     ```
+   2. On all machines, create identical folders to store datasets. Then, download the following datasets and place them into these folders:
+      - [grape-edges-8-Standard.v]()
+      - [grape-edges-9-Standard.v]()
+      - [grape-edges-8-Density.v]()
+      - [grape-edges-9-Density.v]()
+      - [grape-edges-8-Diameter.v]()
+      - [grape-edges-9-Diameter.v]()
+      - [grape-sssp-edges-8-Standard.v]()
+      - [grape-sssp-edges-9-Standard.v]()
+      - [grape-sssp-edges-8-Density.v]()
+      - [grape-sssp-edges-9-Density.v]()
+      - [grape-sssp-edges-8-Diameter.v]()
+      - [grape-sssp-edges-9-Diameter.v]()
+      - [grape-edges-8-Standard.e]()
+      - [grape-edges-9-Standard.e]()
+      - [grape-edges-8-Density.e]()
+      - [grape-edges-9-Density.e]()
+      - [grape-edges-8-Diameter.e]()
+      - [grape-edges-9-Diameter.e]()
+      - [grape-sssp-edges-8-Standard.e]()
+      - [grape-sssp-edges-9-Standard.e]()
+      - [grape-sssp-edges-8-Density.e]()
+      - [grape-sssp-edges-9-Density.e]()
+      - [grape-sssp-edges-8-Diameter.e]()
+      - [grape-sssp-edges-9-Diameter.e]()
+        
+   3. Execute the following command to run the desired algorithm:
+
+      ```bash
+      cd Ligra
+      ./run.sh <ALGORITHM> <PATH_TO_DATASET_FOLDER>
+      ```
+
+      - `<ALGORITHM>`: Replace with the name of the algorithm you want to run (e.g., `sssp`, `pagerank`, etc.).
+      - `<PATH_TO_DATASET_FOLDER>`: Provide the path to the dataset folder.
+      - The output logs will be generated in the `Grape/output/` folder, with the following naming format:  
+       ```
+       ${ALGORITHM}-${DATASET_NAME}-n${machines}-p${SLOTS_PER_WORKER}.log
+       ```

@@ -47,7 +47,7 @@ spec:
               path: ${HOST_PATH}
               type: Directory
           containers:
-          - image: ligra-mpi:v0.3
+          - image: ligra-mpi:v0.1
             name: mpi-worker
             securityContext:
               runAsUser: 1000

@@ -265,7 +265,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
   - `triangle`
   - `cc`
 
-- **Run Grape**:  
+- **Run Pregel+**:  
    After downloading the datasets, follow these steps to run the algorithm:
 
    1. Download and load the Docker image [pregel-mpi-v0.1.tar]() on all machines.
@@ -304,7 +304,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
   - `clique`
   - `triangle`
 
-- **Run Grape**:  
+- **Run Gthinker**:  
    After downloading the datasets, follow these steps to run the algorithm:
 
    1. Download and load the Docker image [gthinker-mpi-v0.1.tar]() on all machines.

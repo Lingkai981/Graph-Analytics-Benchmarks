@@ -13,7 +13,7 @@ HOST_PATH=$2         # Working directory for running experiments
 THREAD_LIST=(1 2 4 8 16 32)
 MACHINE_LIST=(2 4 8 16)
 DATASETS=(Standard Density Diameter)
-MEMORY=5Gi
+MEMORY=100Gi
 MPI_TEMPLATE="pregel-mpijob-template.yaml"
 
 

@@ -250,3 +250,47 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
        ```
        ${ALGORITHM}-${DATASET_NAME}-n${machines}-p${SLOTS_PER_WORKER}.log
        ```
+#### Pregel+
+
+- **Dataset Format**:  
+  The dataset for Ligra is provided as the `.txt` format.
+    - Format: `pregel+-adj-{SCALE}-{FEATURE}.v` (e.g., `pregel+-adj-8-Standard.txt`)
+    
+- **Supported Algorithms**:  
+  - `pagerank`
+  - `sssp`
+  - `betweenness`
+  - `lpa`
+  - `clique`
+  - `triangle`
+  - `cc`
+
+- **Run Grape**:  
+   After downloading the datasets, follow these steps to run the algorithm:
+
+   1. Download and load the Docker image [pregel-mpi-v0.1.tar]() on all machines.
+    ```bash
+     sudo docker load -i pregel-mpi-v0.1.tar
+     ```
+   2. On all machines, create identical folders to store datasets. Then, download the following datasets and place them into these folders:
+      - [pregel+-adj-8-Standard.txt]()
+      - [pregel+-adj-9-Standard.txt]()
+      - [pregel+-adj-8-Density.txt]()
+      - [pregel+-adj-9-Density.txt]()
+      - [pregel+-adj-8-Diameter.txt]()
+      - [pregel+-adj-9-Diameter.txt]()
+        
+   3. Execute the following command to run the desired algorithm:
+      **Important**: In file `pregel-mpijob-template.yaml`, `my-hadoop-cluster-hadoop` **must match** the name of the `ConfigMap` you create or reference in your Kubernetes YAML configurations. If the `ConfigMap` is named differently, you will need to update the name in the `volumes` section of the pod definition.
+
+      ```bash
+      cd Pregel+
+      ./run.sh <ALGORITHM> <PATH_TO_DATASET_FOLDER>
+      ```
+
+      - `<ALGORITHM>`: Replace with the name of the algorithm you want to run (e.g., `sssp`, `pagerank`, etc.).
+      - `<PATH_TO_DATASET_FOLDER>`: Provide the path to the dataset folder.
+      - The output logs will be generated in the `Pregel+/output/` folder, with the following naming format:  
+       ```
+       ${ALGORITHM}-${DATASET_NAME}-n${machines}-p${SLOTS_PER_WORKER}.log
+       ```

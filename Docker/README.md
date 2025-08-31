@@ -281,7 +281,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
       - [pregel+-adj-9-Diameter.txt]()
         
    3. Execute the following command to run the desired algorithm:
-      **Important**: In file `pregel-mpijob-template.yaml`, `my-hadoop-cluster-hadoop` **must match** the name of the `ConfigMap` you create or reference in your Kubernetes YAML configurations. If the `ConfigMap` is named differently, you will need to update the name in the `volumes` section of the pod definition.
+      - **Important**: In file `pregel-mpijob-template.yaml`, `my-hadoop-cluster-hadoop` **must match** the name of the `ConfigMap` you create or reference in your Kubernetes YAML configurations. If the `ConfigMap` is named differently, you will need to update the name in the `volumes` section of the pod definition.
 
       ```bash
       cd Pregel+

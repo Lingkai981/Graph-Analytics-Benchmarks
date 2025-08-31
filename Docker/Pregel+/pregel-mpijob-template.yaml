@@ -1,0 +1,161 @@
+apiVersion: kubeflow.org/v2beta1
+kind: MPIJob
+metadata:
+  name: pregel-mpijob
+spec:
+  slotsPerWorker: ${SLOTS_PER_WORKER}          
+  runPolicy:
+    cleanPodPolicy: None
+    ttlSecondsAfterFinished: 120
+  sshAuthMountPath: /home/mpiuser/.ssh
+
+  mpiReplicaSpecs:
+    Launcher:
+      replicas: 1
+      template:
+        spec:
+          restartPolicy: OnFailure
+          volumes:
+            - name: hadoop-config
+              configMap:
+                name: my-hadoop-cluster-hadoop   
+            - name: scratch
+              emptyDir: {}
+            - name: pregeldata
+              hostPath:
+                path: ${HOST_PATH}
+                type: Directory
+
+            
+          containers:
+            - name: mpi-launcher
+              image: pregel-mpi:v0.1      
+              imagePullPolicy: IfNotPresent
+              securityContext:
+                runAsUser: 1000
+              env:
+
+                - name: HDFS_NN_SERVICE
+                  value: my-hadoop-cluster-hadoop-hdfs-nn
+                - name: HDFS_NN_PORT
+                  value: "8020"                   
+
+                - name: CLEAN_OUTPUT
+                  value: "1"
+
+                - name: JAVA_HOME
+                  value: /usr/lib/jvm/java-17-openjdk-amd64
+                - name: PATH
+                  value: "$(JAVA_HOME)/bin:/usr/local/hadoop/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+
+              volumeMounts:
+                - name: hadoop-config
+                  mountPath: /etc/hadoop
+                - name: scratch
+                  mountPath: /opt/scratch
+                - name: pregeldata
+                  mountPath: /opt/data/
+
+              command: ["/usr/bin/env"]
+              args:
+              - -i
+              - JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+              - PATH=/usr/lib/jvm/java-17-openjdk-amd64/bin:/usr/local/hadoop/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+              - HADOOP_HOME=/usr/local/hadoop
+              - HADOOP_CONF_DIR=/etc/hadoop
+              - bash
+              - -c
+              - |
+                  set -euo pipefail
+                  env | egrep '^(JAVA_HOME|PATH|HADOOP_CONF_DIR)='
+                  which java; java -version
+
+                  echo "[INFO] Waiting DNS sync..."; sleep 10
+                  echo "[INFO] Hostfile:"; cat /etc/mpi/hostfile || true
+
+                  if command -v hdfs >/dev/null 2>&1; then
+                    hdfs dfs -stat / || hdfs dfs -ls /
+                  else
+                    echo "[WARN] 'hdfs' not in PATH, try /usr/local/hadoop/bin/hdfs"
+                    /usr/local/hadoop/bin/hdfs dfs -stat / || /usr/local/hadoop/bin/hdfs dfs -ls /
+                  fi
+
+                  
+
+                  if /usr/local/hadoop/bin/hdfs dfs -test -e /user/mpiuser/${DATASET}; then
+                    echo "${DATASET} is ready"
+                  else
+                    HADOOP_USER_NAME=root hdfs dfs -mkdir -p /user/mpiuser
+                    HADOOP_USER_NAME=root hdfs dfs -chown mpiuser:supergroup /user/mpiuser
+                    HADOOP_USER_NAME=root hdfs dfs -chmod 775 /user/mpiuser
+                    /usr/local/hadoop/bin/hdfs dfs -put /opt/data/${DATASET} /user/mpiuser/
+                    /usr/local/hadoop/bin/hdfs dfs -ls /user/mpiuser/
+                  fi
+
+                
+
+                  if [ "$SINGLE_MACHINE" = "1" ]; then
+                    echo "Running in single-machine mode..."
+                    cd ${ALGORITHM}
+                    time mpirun -n ${MPIRUN_NP} ./run /user/mpiuser/${DATASET}
+      
+                  else
+                    echo "Running in multi-machine mode..."
+                    time mpirun -n ${MPIRUN_NP} -hostfile /etc/mpi/hostfile ./run /user/mpiuser/${DATASET}
+    
+                  fi
+
+              resources:
+                limits:
+                  cpu: ${CPU}
+                  memory: ${MEMORY}
+                requests:
+                  cpu: ${CPU}
+                  memory: ${MEMORY}
+
+    Worker:
+      replicas: ${REPLICAS}
+      template:
+        spec:
+          restartPolicy: OnFailure
+          volumes:
+            - name: hadoop-config
+              configMap:
+                name: my-hadoop-cluster-hadoop
+            - name: scratch
+              emptyDir: {}
+            - name: pregeldata
+              hostPath:
+                path: ${HOST_PATH}
+                type: Directory
+          containers:
+            - name: mpi-worker
+              image: pregel-mpi:v0.1    
+              imagePullPolicy: IfNotPresent
+              securityContext:
+                runAsUser: 1000
+              env:
+                - name: JAVA_HOME
+                  value: /usr/lib/jvm/java-17-openjdk-amd64
+                - name: PATH
+                  value: "$(JAVA_HOME)/bin:/usr/local/hadoop/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+
+
+              volumeMounts:
+                - name: hadoop-config
+                  mountPath: /etc/hadoop
+                - name: scratch
+                  mountPath: /opt/scratch
+                - name: pregeldata
+                  mountPath: /opt/data/
+              command: ["/usr/sbin/sshd"]
+              args: ["-De","-f","/home/mpiuser/.sshd_config"]
+              resources:
+                limits:
+                  cpu: ${CPU}
+                  memory: ${MEMORY}
+                requests:
+                  cpu: ${CPU}
+                  memory: ${MEMORY}

@@ -2,7 +2,7 @@
 
 # === Argument Check ===
 if [ "$#" -ne 2 ]; then
-    echo "Usage: $0 <ALGORITHM> <PATH_TO_DATASET_FOLDER>"
+    echo "Usage: $0 <ALGORITHM> <HOST_PATH>"
     exit 1
 fi
 
@@ -13,13 +13,16 @@ HOST_PATH=$2         # Working directory for running experiments
 THREAD_LIST=(1 2 4 8 16 32)
 MACHINE_LIST=(2 4 8 16)
 DATASETS=(Standard Density Diameter)
-MEMORY=100Gi
-MPI_TEMPLATE="flash-mpijob-template.yaml"
+MEMORY=5Gi
+MPI_TEMPLATE="gthinker-mpijob-template.yaml"
+
+NAMESPACE="hadoop"
+JOB_NAME="gthinker-mpijob"
 
 DATASET_NAME=""
 ALGORITHM_PARAMETER_=0
 
-mkdir output
+mkdir -p output
 
 export CPU=32
 export MEMORY=100Gi
@@ -39,10 +42,9 @@ echo "[INFO] ====== SINGLE MACHINE TESTING ======"
 for dataset in "${DATASETS[@]}"; do
 
     if [ "$ALGORITHM" = "sssp" ]; then
-        DATASET_NAME="flash-sssp-edges-8-${dataset}"
-
+        DATASET_NAME="gthinker-adj-8-${dataset}.txt"
     else
-        DATASET_NAME="flash-edges-8-${dataset}"
+        DATASET_NAME="gthinker-adj-8-${dataset}.txt"
     fi
 
     for thread in "${THREAD_LIST[@]}"; do
@@ -53,19 +55,18 @@ for dataset in "${DATASETS[@]}"; do
         export ALGORITHM_PARAMETER=$ALGORITHM_PARAMETER_
         export SINGLE_MACHINE=1
 
-        LOG_FILE="output/${ALGORITHM}-${DATASET_NAME}-n${machines}-p${SLOTS_PER_WORKER}.log"
+        LOG_FILE="output/${ALGORITHM}-${DATASET_NAME}-n${REPLICAS}-p${SLOTS_PER_WORKER}.log"
 
-        # Generate and submit MPIJob YAML
-        
-        envsubst < "$MPI_TEMPLATE" > flash-mpijob.yaml
+        envsubst  '${DATASET} ${ALGORITHM} ${MPIRUN_NP} ${CPU} ${MEMORY} ${HOST_PATH} ${SLOTS_PER_WORKER} ${REPLICAS}' < gthinker-mpijob-template.yaml > gthinker-mpijob.yaml
+     
         echo "[INFO] Submitting MPIJob: $ALGORITHM with 1 machines..."
-        kubectl apply -f flash-mpijob.yaml
-        kubectl wait --for=condition=Succeeded mpijob/flash-mpijob --timeout=10m
+        kubectl -n "$NAMESPACE" apply -f gthinker-mpijob.yaml
 
-        kubectl logs job/flash-mpijob-launcher > "$LOG_FILE"
+        kubectl -n "$NAMESPACE" wait --for=condition=Succeeded mpijob/${JOB_NAME} --timeout=10m
 
-        # Clean up the job
-        kubectl delete -f flash-mpijob.yaml
+        kubectl -n "$NAMESPACE" logs job/${JOB_NAME}-launcher > "$LOG_FILE"
+
+        kubectl -n "$NAMESPACE" delete -f gthinker-mpijob.yaml
     done
 done
 
@@ -73,31 +74,31 @@ done
 echo "[INFO] ====== MULTI-MACHINE TESTING ======"
 for dataset in "${DATASETS[@]}"; do
     if [ "$ALGORITHM" = "sssp" ]; then
-        DATASET_NAME="flash-sssp-edges-9-${dataset}"
+        DATASET_NAME="gthinker-adj-9-${dataset}.txt"
     else
-        DATASET_NAME="flash-edges-9-${dataset}"
+        DATASET_NAME="gthinker-adj-9-${dataset}.txt"
     fi
 
     for machines in "${MACHINE_LIST[@]}"; do
         export DATASET=$DATASET_NAME
         export SLOTS_PER_WORKER=32
         export REPLICAS=$machines
-        export MPIRUN_NP=$((machines * ${SLOTS_PER_WORKER}))
+        export MPIRUN_NP=$((machines * 32))
         export ALGORITHM_PARAMETER=$ALGORITHM_PARAMETER_
         export SINGLE_MACHINE=0
 
         LOG_FILE="output/${ALGORITHM}-${DATASET_NAME}-n${machines}-p${SLOTS_PER_WORKER}.log"
 
-        # Generate and submit MPIJob YAML
-        envsubst < "$MPI_TEMPLATE" > flash-mpijob.yaml
+        envsubst  '${DATASET} ${ALGORITHM} ${MPIRUN_NP} ${CPU} ${MEMORY} ${HOST_PATH} ${SLOTS_PER_WORKER} ${REPLICAS}' < gthinker-mpijob-template.yaml > gthinker-mpijob.yaml
+     
         echo "[INFO] Submitting MPIJob: $ALGORITHM with $machines machines..."
-        kubectl apply -f flash-mpijob.yaml
-        kubectl wait --for=condition=Succeeded mpijob/flash-mpijob --timeout=10m
+        kubectl -n "$NAMESPACE" apply -f gthinker-mpijob.yaml
 
-        kubectl logs job/flash-mpijob-launcher > "$LOG_FILE"
+        kubectl -n "$NAMESPACE" wait --for=condition=Succeeded mpijob/${JOB_NAME} --timeout=10m
 
-        # Clean up the job
-        kubectl delete -f flash-mpijob.yaml
+        kubectl -n "$NAMESPACE" logs job/${JOB_NAME}-launcher > "$LOG_FILE"
+
+        kubectl -n "$NAMESPACE" delete -f gthinker-mpijob.yaml
     done
 done
 

@@ -25,6 +25,8 @@ spec:
               hostPath:
                 path: ${HOST_PATH}
                 type: Directory
+            - name: shared-mpi-data
+              emptyDir: {}
 
             
           containers:
@@ -58,6 +60,8 @@ spec:
                   mountPath: /opt/scratch
                 - name: gthinkerdata
                   mountPath: /opt/data/
+                - name: shared-mpi-data
+                  mountPath: /mnt/mpi
 
               command: ["/bin/bash"]
               args:
@@ -94,15 +98,18 @@ spec:
                     cat /etc/hadoop/core-site.xml
 
                     HADOOP_CP=$(cat /etc/hadoop_classpath)
-                    mpiexec -n ${machines} --hostfile hosts ./run ${dataset} ${threads}
+
+                    CONVERTED_HOSTFILE="/mnt/mpi/hostfile" 
+                    sed 's/ slots=/:/' /etc/mpi/hostfile > "${CONVERTED_HOSTFILE}"
+                    
                     time mpiexec \
-                      -n ${REPLICAS} \
-                      --hostfile /etc/mpi/hostfile \
+                      -np ${REPLICAS} \
+                      --hostfile "${CONVERTED_HOSTFILE}" \
                       -verbose \
-                      -x CLASSPATH="$(cat /etc/hadoop_classpath)" \
-                      -x LD_LIBRARY_PATH="/usr/lib/jvm/java-17-openjdk-amd64/lib/server:/usr/local/hadoop/lib/native:/usr/local/bin:/usr/local/lib:/usr/local/openmpi/bin:/usr/local/openmpi/lib" \
-                      -x JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64" \
-                      -x HADOOP_CONF_DIR="/etc/hadoop" \
+                      -env CLASSPATH "${HADOOP_CP}" \
+                      -env LD_LIBRARY_PATH "/usr/lib/jvm/java-17-openjdk-amd64/lib/server:/usr/local/hadoop/lib/native:/usr/local/bin:/usr/local/lib:/usr/local/openmpi/bin:/usr/local/openmpi/lib" \
+                      -env JAVA_HOME "/usr/lib/jvm/java-17-openjdk-amd64" \
+                      -env HADOOP_CONF_DIR "/etc/hadoop" \
                       /opt/gthinker/${ALGORITHM}/run "${DATASET_HDFS_PATH}" ${SLOTS_PER_WORKER}
 
               resources:
@@ -128,6 +135,8 @@ spec:
               hostPath:
                 path: ${HOST_PATH}
                 type: Directory
+            - name: shared-mpi-data
+              emptyDir: {}
           containers:
             - name: mpi-worker
               image: gthinker-mpi:v0.1    
@@ -154,6 +163,8 @@ spec:
                   mountPath: /opt/scratch
                 - name: gthinkerdata
                   mountPath: /opt/data/
+                - name: shared-mpi-data
+                  mountPath: /mnt/mpi
               command: ["/usr/sbin/sshd"]
               args: ["-De","-f","/home/mpiuser/.sshd_config"]
               resources:

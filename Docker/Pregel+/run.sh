@@ -58,7 +58,8 @@ for dataset in "${DATASETS[@]}"; do
 
         LOG_FILE="output/${ALGORITHM}-${DATASET_NAME}-n${REPLICAS}-p${SLOTS_PER_WORKER}.log"
 
-        envsubst < "$MPI_TEMPLATE" > pregel-mpijob.yaml
+        envsubst  '${DATASET} ${ALGORITHM} ${MPIRUN_NP} ${CPU} ${MEMORY} ${HOST_PATH} ${SLOTS_PER_WORKER} ${REPLICAS}' < pregel-mpijob-template.yaml > pregel-mpijob.yaml
+
         echo "[INFO] Submitting MPIJob: $ALGORITHM with 1 machines..."
         kubectl -n "$NAMESPACE" apply -f pregel-mpijob.yaml
 

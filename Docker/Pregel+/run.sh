@@ -76,7 +76,7 @@ for dataset in "${DATASETS[@]}"; do
         export DATASET=$DATASET_NAME
         export SLOTS_PER_WORKER=32
         export REPLICAS=$machines
-        export MPIRUN_NP=$((machines * SLOTS_PER_WORKER))
+        export MPIRUN_NP=$((machines * 32))
         export ALGORITHM_PARAMETER=$ALGORITHM_PARAMETER_
         export SINGLE_MACHINE=0
 

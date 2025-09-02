@@ -30,14 +30,6 @@ export MEMORY=10Gi
 export HOST_PATH=$HOST_PATH
 export ALGORITHM=$ALGORITHM
 
-if [ "$ALGORITHM" = "k-core-search" ]; then
-    ALGORITHM_PARAMETER_=3
-elif [ "$ALGORITHM" = "clique" ]; then
-    ALGORITHM_PARAMETER_=5
-else
-    ALGORITHM_PARAMETER_=0
-fi
-
 # === Single-machine Multi-thread Testing ===
 echo "[INFO] ====== SINGLE MACHINE TESTING ======"
 for dataset in "${DATASETS[@]}"; do
@@ -75,9 +67,9 @@ done
 echo "[INFO] ====== MULTI-MACHINE TESTING ======"
 for dataset in "${DATASETS[@]}"; do
     if [ "$ALGORITHM" = "sssp" ]; then
-        DATASET_NAME="pregel+-adj-9-${dataset}"
+        DATASET_NAME="pregel+-adj-9-${dataset}.txt"
     else
-        DATASET_NAME="pregel+-adj-9-${dataset}"
+        DATASET_NAME="pregel+-adj-9-${dataset}.txt"
     fi
 
     for machines in "${MACHINE_LIST[@]}"; do
@@ -90,7 +82,8 @@ for dataset in "${DATASETS[@]}"; do
 
         LOG_FILE="output/${ALGORITHM}-${DATASET_NAME}-n${machines}-p${SLOTS_PER_WORKER}.log"
 
-        envsubst < "$MPI_TEMPLATE" > pregel-mpijob.yaml
+        envsubst  '${DATASET} ${ALGORITHM} ${MPIRUN_NP} ${CPU} ${MEMORY} ${HOST_PATH} ${SLOTS_PER_WORKER} ${REPLICAS}' < pregel-mpijob-template.yaml > pregel-mpijob.yaml
+
         echo "[INFO] Submitting MPIJob: $ALGORITHM with $machines machines..."
         kubectl -n "$NAMESPACE" apply -f pregel-mpijob.yaml
 

@@ -98,7 +98,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
   - `bc`
 
 - **Run Flash**:  
-   After downloading the datasets, follow these steps to run the algorithm:
+   Follow these steps to run the algorithm:
 
    1. Download and load the Docker image [flash-mpi-v0.4.tar]() on all machines.
      ```bash
@@ -152,7 +152,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
   - `Triangle`
 
 - **Run Ligra**:  
-   After downloading the datasets, follow these steps to run the algorithm:
+   Follow these steps to run the algorithm:
 
    1. Download and load the Docker image [ligra-mpi-v0.1.tar]() on all machines.
     ```bash
@@ -205,7 +205,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
   - `lcc`
 
 - **Run Grape**:  
-   After downloading the datasets, follow these steps to run the algorithm:
+   Follow these steps to run the algorithm:
 
    1. Download and load the Docker image [grape-mpi-v0.1.tar]() on all machines.
     ```bash
@@ -266,7 +266,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
   - `cc`
 
 - **Run Pregel+**:  
-   After downloading the datasets, follow these steps to run the algorithm:
+   Follow these steps to run the algorithm:
 
    1. Download and load the Docker image [pregel-mpi-v0.1.tar]() on all machines.
     ```bash
@@ -305,7 +305,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
   - `triangle`
 
 - **Run Gthinker**:  
-   After downloading the datasets, follow these steps to run the algorithm:
+   Follow these steps to run the algorithm:
 
    1. Download and load the Docker image [gthinker-mpi-v0.1.tar]() on all machines.
     ```bash
@@ -348,8 +348,8 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
   - `cc`
   - `betweenness`
 
-- **Run Gthinker**:  
-   After downloading the datasets, follow these steps to run the algorithm:
+- **Run PowerGraph**:  
+   Follow these steps to run the algorithm:
 
    1. Download and load the Docker image [graphlab-mpi-v0.1.tar]() on all machines.
     ```bash
@@ -377,3 +377,36 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
        ```
        ${ALGORITHM}-${DATASET_NAME}-n${machines}-p${SLOTS_PER_WORKER}.log
        ```
+#### GraphX
+
+- **Dataset Format**:  
+  The dataset for Ligra is provided as the `.txt` format.
+    - Format: `graphx-adj-{SCALE}-{FEATURE}.v` (e.g., `graphx-adj-8-Standard.txt`)
+
+- **Supported Algorithms**:  
+  - `pagerank`([[`.jar` file]](Performance%20Evaluation/GraphX/PageRankExample/pagerankexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/PageRankExample/pagerank.sh))
+  - `sssp`([[`.jar` file]](Performance%20Evaluation/GraphX/SSSPExample/ssspexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/SSSPExample/sssp.sh))
+  - `triangle`([[`.jar` file]](Performance%20Evaluation/GraphX/TriangleCountingExample/trianglecountingexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/TriangleCountingExample/trianglecounting.sh))
+  - `lpa`([[`.jar` file]](Performance%20Evaluation/GraphX/LabelPropagationExample/labelpropagationexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/LabelPropagationExample/labelpropagation.sh))
+  - `kcore`([[`.jar` file]](Performance%20Evaluation/GraphX/CoreExample/coreexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/CoreExample/core.sh))
+  - `cc`([[`.jar` file]](Performance%20Evaluation/GraphX/ConnectedComponentExample/connectedcomponentexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/ConnectedComponentExample/connectedcomponent.sh)
+)
+  - `betweenness`([[`.jar` file]](Performance%20Evaluation/GraphX/BetweennessCentralityExample/betweennesscentralityexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/BetweennessCentralityExample/betweennesscentrality.sh))
+  - `clique`([[`.jar` file]](Performance%20Evaluation/GraphX/KCliqueExample/kcliqueexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/KCliqueExample/kclique.sh))
+
+- **Run Gthinker**:  
+   Follow these steps to run the algorithm:
+
+- **Run PowerGraph**:  
+   Follow these steps to run the algorithm:
+  
+   1. Download the following datasets and place them into these folders:
+      - [graphx-adj-8-Standard.txt]()
+      - [graphx-adj-9-Standard.txt]()
+      - [graphx-adj-8-Density.txt]()
+      - [graphx-adj-9-Density.txt]()
+      - [graphx-adj-8-Diameter.txt]()
+      - [graphx-adj-9-Diameter.txt]()
+        
+   3. Execute the command to run the algorithm:
+

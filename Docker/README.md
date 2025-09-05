@@ -254,7 +254,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
 
 - **Dataset Format**:  
   The dataset for Ligra is provided as the `.txt` format.
-    - Format: `pregel+-adj-{SCALE}-{FEATURE}.v` (e.g., `pregel+-adj-8-Standard.txt`)
+    - Format: `pregel+-adj-{SCALE}-{FEATURE}.txt` (e.g., `pregel+-adj-8-Standard.txt`)
     
 - **Supported Algorithms**:  
   - `pagerank`
@@ -298,7 +298,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
 
 - **Dataset Format**:  
   The dataset for Ligra is provided as the `.txt` format.
-    - Format: `gthinker-adj-{SCALE}-{FEATURE}.v` (e.g., `gthinker-adj-8-Standard.txt`)
+    - Format: `gthinker-adj-{SCALE}-{FEATURE}.txt` (e.g., `gthinker-adj-8-Standard.txt`)
     
 - **Supported Algorithms**:  
   - `clique`
@@ -337,7 +337,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
 
 - **Dataset Format**:  
   The dataset for Ligra is provided as the `.txt` format.
-    - Format: `graphlab-adj-{SCALE}-{FEATURE}.v` (e.g., `graphlab-adj-8-Standard.txt`)
+    - Format: `graphlab-adj-{SCALE}-{FEATURE}.txt` (e.g., `graphlab-adj-8-Standard.txt`)
     
 - **Supported Algorithms**:  
   - `pagerank`
@@ -384,29 +384,56 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
     - Format: `graphx-adj-{SCALE}-{FEATURE}.v` (e.g., `graphx-adj-8-Standard.txt`)
 
 - **Supported Algorithms**:  
-  - `pagerank`([[`.jar` file]](Performance%20Evaluation/GraphX/PageRankExample/pagerankexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/PageRankExample/pagerank.sh))
-  - `sssp`([[`.jar` file]](Performance%20Evaluation/GraphX/SSSPExample/ssspexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/SSSPExample/sssp.sh))
-  - `triangle`([[`.jar` file]](Performance%20Evaluation/GraphX/TriangleCountingExample/trianglecountingexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/TriangleCountingExample/trianglecounting.sh))
-  - `lpa`([[`.jar` file]](Performance%20Evaluation/GraphX/LabelPropagationExample/labelpropagationexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/LabelPropagationExample/labelpropagation.sh))
-  - `kcore`([[`.jar` file]](Performance%20Evaluation/GraphX/CoreExample/coreexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/CoreExample/core.sh))
-  - `cc`([[`.jar` file]](Performance%20Evaluation/GraphX/ConnectedComponentExample/connectedcomponentexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/ConnectedComponentExample/connectedcomponent.sh)
-)
-  - `betweenness`([[`.jar` file]](Performance%20Evaluation/GraphX/BetweennessCentralityExample/betweennesscentralityexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/BetweennessCentralityExample/betweennesscentrality.sh))
-  - `clique`([[`.jar` file]](Performance%20Evaluation/GraphX/KCliqueExample/kcliqueexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/KCliqueExample/kclique.sh))
+  - `pagerank`
+  - `sssp`
+  - `triangle`
+  - `lpa`
+  - `kcore`
+  - `cc`
+  - `betweenness`
+  - `clique`
 
-- **Run Gthinker**:  
-   Follow these steps to run the algorithm:
+- **Run PowerGraph**:
+  - **Environment Requirements**:
+  The `.jar` files are compiled with **Scala 2.11** (`_2.11` suffix). To ensure compatibility, use the following environment:
 
-- **Run PowerGraph**:  
+  - **Java**: OpenJDK/Oracle JDK **8** (1.8, recommended `1.8.0_202` or later)
+  - **Scala**: **2.11.12** (only required if you plan to recompile or use Scala REPL)
+  - **Apache Spark**: **2.4.8** (*Pre-built for Hadoop 2.7*)
+    - Spark 2.4.x is the last major version compiled with Scala 2.11.  
+    - **Do not use Spark 3.x** (requires Scala 2.12+).
+  - **Hadoop**: **2.7.x**
+  
    Follow these steps to run the algorithm:
   
    1. Download the following datasets and place them into these folders:
-      - [graphx-adj-8-Standard.txt]()
-      - [graphx-adj-9-Standard.txt]()
-      - [graphx-adj-8-Density.txt]()
-      - [graphx-adj-9-Density.txt]()
-      - [graphx-adj-8-Diameter.txt]()
-      - [graphx-adj-9-Diameter.txt]()
+      - [graphx-edges-8-Standard.txt]()
+      - [graphx-edges-9-Standard.txt]()
+      - [graphx-edges-8-Density.txt]()
+      - [graphx-edges-9-Density.txt]()
+      - [graphx-edges-8-Diameter.txt]()
+      - [graphx-edges-9-Diameter.txt]()
+      - [graphx-weight-edges-8-Standard.txt]()
+      - [graphx-weight-edges-9-Standard.txt]()
+      - [graphx-weight-edges-8-Density.txt]()
+      - [graphx-weight-edges-9-Density.txt]()
+      - [graphx-weight-edges-8-Diameter.txt]()
+      - [graphx-weight-edges-9-Diameter.txt]()
         
-   3. Execute the command to run the algorithm:
+   2. Download the `.jar` files into the **GraphX/** folder and execute the command to run the algorithm:
+      - `pagerank`([[`.jar` file]](Performance%20Evaluation/GraphX/PageRankExample/pagerankexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/PageRankExample/pagerank.sh))
+      - `sssp`([[`.jar` file]](Performance%20Evaluation/GraphX/SSSPExample/ssspexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/SSSPExample/sssp.sh))
+      - `triangle`([[`.jar` file]](Performance%20Evaluation/GraphX/TriangleCountingExample/trianglecountingexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/TriangleCountingExample/trianglecounting.sh))
+      - `lpa`([[`.jar` file]](Performance%20Evaluation/GraphX/LabelPropagationExample/labelpropagationexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/LabelPropagationExample/labelpropagation.sh))
+      - `kcore`([[`.jar` file]](Performance%20Evaluation/GraphX/CoreExample/coreexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/CoreExample/core.sh))
+      - `cc`([[`.jar` file]](Performance%20Evaluation/GraphX/ConnectedComponentExample/connectedcomponentexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/ConnectedComponentExample/connectedcomponent.sh)
+)
+      - `betweenness`([[`.jar` file]](Performance%20Evaluation/GraphX/BetweennessCentralityExample/betweennesscentralityexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/BetweennessCentralityExample/betweennesscentrality.sh))
+      - `clique`([[`.jar` file]](Performance%20Evaluation/GraphX/KCliqueExample/kcliqueexample_2.11-0.1.jar) [[Command]](Performance%20Evaluation/GraphX/KCliqueExample/kclique.sh))
+     
+      For Example:
+      ```bash
+      cd GraphX
+      ./pagerank.sh
+      ```
 

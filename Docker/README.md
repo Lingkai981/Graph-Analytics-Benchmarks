@@ -100,7 +100,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
 - **Run Flash**:  
    Follow these steps to run the algorithm:
 
-   1. Download and load the Docker image [flash-mpi-v0.4.tar]() on all machines.
+   1. Download and load the Docker image [flash-mpi-v0.4.tar](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/flash-mpi-v0.4.tar) on all machines.
      ```bash
      sudo docker load -i flash-mpi-v0.4.tar
      ```
@@ -154,7 +154,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
 - **Run Ligra**:  
    Follow these steps to run the algorithm:
 
-   1. Download and load the Docker image [ligra-mpi-v0.1.tar]() on all machines.
+   1. Download and load the Docker image [ligra-mpi-v0.1.tar](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/ligra-mpi-v0.1.tar) on all machines.
     ```bash
      sudo docker load -i ligra-mpi-v0.1.tar
      ```
@@ -207,7 +207,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
 - **Run Grape**:  
    Follow these steps to run the algorithm:
 
-   1. Download and load the Docker image [grape-mpi-v0.1.tar]() on all machines.
+   1. Download and load the Docker image [grape-mpi-v0.1.tar](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/grape-mpi-v0.1.tar) on all machines.
     ```bash
      sudo docker load -i grape-mpi-v0.1.tar
      ```
@@ -268,7 +268,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
 - **Run Pregel+**:  
    Follow these steps to run the algorithm:
 
-   1. Download and load the Docker image [pregel-mpi-v0.1.tar]() on all machines.
+   1. Download and load the Docker image [pregel-mpi-v0.1.tar](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/pregel-mpi-v0.1.tar) on all machines.
     ```bash
      sudo docker load -i pregel-mpi-v0.1.tar
      ```
@@ -307,7 +307,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
 - **Run Gthinker**:  
    Follow these steps to run the algorithm:
 
-   1. Download and load the Docker image [gthinker-mpi-v0.1.tar]() on all machines.
+   1. Download and load the Docker image [gthinker-mpi-v0.1.tar](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/gthinker-mpi-v0.1.tar) on all machines.
     ```bash
      sudo docker load -i pregel-mpi-v0.1.tar
      ```
@@ -351,7 +351,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
 - **Run PowerGraph**:  
    Follow these steps to run the algorithm:
 
-   1. Download and load the Docker image [graphlab-mpi-v0.1.tar]() on all machines.
+   1. Download and load the Docker image [graphlab-mpi-v0.1.tar](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphlab-mpi-v0.1.tar) on all machines.
     ```bash
      sudo docker load -i pregel-mpi-v0.1.tar
      ```

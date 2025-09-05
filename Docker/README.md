@@ -311,13 +311,8 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
     ```bash
      sudo docker load -i pregel-mpi-v0.1.tar
      ```
-   2. On all machines, create identical folders to store datasets. Then, download the following datasets and place them into these folders:
-      - [gthinker-adj-8-Standard.txt]()
-      - [gthinker-adj-9-Standard.txt]()
-      - [gthinker-adj-8-Density.txt]()
-      - [gthinker-adj-9-Density.txt]()
-      - [gthinker-adj-8-Diameter.txt]()
-      - [gthinker-adj-9-Diameter.txt]()
+   2. On all machines, create identical folders to store datasets. Then, download datasets (same to datasets of Pregel+) and place them into these folders.
+      
         
    3. Execute the following command to run the desired algorithm:
       - **Important**: In file `gthinker-mpijob-template.yaml`, `my-hadoop-cluster-hadoop` **must match** the name of the `ConfigMap` you create or reference in your Kubernetes YAML configurations. If the `ConfigMap` is named differently, you will need to update the name in the `volumes` section of the pod definition.

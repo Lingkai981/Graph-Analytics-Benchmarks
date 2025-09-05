@@ -311,7 +311,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
     ```bash
      sudo docker load -i pregel-mpi-v0.1.tar
      ```
-   2. On all machines, create identical folders to store datasets. Then, download datasets (same to datasets of Pregel+) and place them into these folders.
+   2. On all machines, create identical folders to store datasets. Then, download datasets (**same to datasets of Pregel+**) and place them into these folders.
       
         
    3. Execute the following command to run the desired algorithm:

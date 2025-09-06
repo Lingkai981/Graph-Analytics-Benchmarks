@@ -1,20 +1,59 @@
 # Graph-Analytics-Benchmarks
 
-> **About**: This repository accompanies the paper *[“Revisiting Graph Analytics Benchmark.”](https://doi.org/10.1145/3725345)*  
-> The paper argues that existing benchmarking suites (e.g., LDBC Graphalytics) do not fully capture differences across graph platforms, and introduces a new benchmark to address this gap.  
+**Graph-Analytics-Benchmarks** accompanies the paper [*Revisiting Graph Analytics Benchmark*](https://doi.org/10.1145/3725345).  
+This project introduces a new benchmark that overcomes limitations of existing suites and enables apples-to-apples comparisons across graph platforms.
 
-> **Highlights**  
-> - **Algorithm Coverage**: Eight representative algorithms (PR, SSSP, TC, BC, KC, CD, LPA, WCC) selected for both coverage and discriminative power.  
-> - **Data Generator**: An efficient, **failure-free** generator (FFT-DG) that independently controls **scale**, **density**, and **diameter**.  
-> - **Usability Evaluation**: A novel **multi-level LLM framework** for assessing API usability, replacing costly human studies.  
-> - **Empirical Validation**: Benchmarked on GraphX, PowerGraph, Flash, Grape, Pregel+, Ligra, and G-thinker, reporting **Timing**, **Throughput (edges/s)**, **Scalability**, and **Robustness**.
-> These components enable apples-to-apples comparisons across platforms and scales with minimal setup.
+---
 
 
-> This repo provides: (1) an efficient **Failure-Free Trial Data Generator (FFT-DG)**, (2) an **LLM-based API usability evaluation** framework, and (3) scripts and assets to **reproduce performance benchmarks** on multiple graph platforms.
+
+## Table of Contents
+
+1. [Overview](#overview)  
+2. [Quick Start](#quick-start)  
+   - [Data Generator](#data-generator)  
+   - [LLM-based Usability Evaluation](#llm-based-usability-evaluation)  
+     - [Environment Setup](#environment-setup)  
+     - [Running the Program](#running-the-program)  
+   - [Performance Evaluation](#performance-evaluation)  
+     - [Platform Groups](#platform-groups)  
+     - [Platforms and Configurations](#platforms-and-configurations)  
+       - [Flash](#flash)  
+       - [Ligra](#ligra)  
+       - [Grape](#grape)  
+       - [Pregel+](#pregel)  
+       - [Gthinker](#gthinker)  
+       - [PowerGraph](#powergraph)  
+       - [GraphX](#graphx)  
+3. [Cite This Work](#cite-this-work)  
 
 
 ## Overview
+
+**Graph-Analytics-Benchmarks** accompanies the paper [“Revisiting Graph Analytics Benchmark”](https://doi.org/10.1145/3725345), which introduces a new benchmark suite for cross-platform graph analytics.  
+The paper argues that existing suites (e.g., LDBC Graphalytics) fall short in fully capturing differences across platforms, and proposes a benchmark enabling fair, scalable, and reproducible comparisons.
+
+**This repository provides three main components:**
+- **Failure-Free Trial Data Generator (FFT-DG)**:  
+  A lightweight, failure-immune data generator with independent control over **scale**, **density**, and **diameter**. Supports multiple output formats (including weighted/unweighted edge lists).
+- **LLM-based API Usability Evaluation**:  
+  A multi-level LLM framework for automatically generating and evaluating algorithm implementations across platforms, producing multi-dimensional quality scores and replacing costly human studies (packaged in Docker for one-command execution).
+- **Performance Evaluation Scripts**:  
+  Reproducible experiment setup in **Kubernetes + Docker**, with distributed jobs scheduled by the **Kubeflow MPI Operator (MPIJob)**. Provides unified reporting on **timing, throughput (edges/s), scalability, and robustness**.
+
+**Algorithm Coverage (8 representative algorithms):**  
+PageRank (PR), Single-Source Shortest Path (SSSP), Triangle Counting (TC), Betweenness Centrality (BC), K-Core (KC), Community Detection (CD), Label Propagation (LPA), Weakly Connected Components (WCC).
+
+**Supported Platforms and Execution Modes:**
+- **Kubernetes + MPI**: Flash, Ligra, Grape  
+- **Kubernetes + MPI + Hadoop**: Pregel+, Gthinker, PowerGraph  
+- **Spark-based**: GraphX (requires Spark 2.4.x / Scala 2.11 / Hadoop 2.7 / Java 8)
+
+**Intended Audience:**  
+Researchers, practitioners, and educators in graph systems and distributed computing who require reproducible, apples-to-apples comparisons and system tuning under consistent conditions.
+
+> For citation details, see [Cite This Work](#cite-this-work).
+
 
 ## Quick Start
 
@@ -99,7 +138,7 @@ docker run -it --rm -e OPENAI_API_KEY=<your OPENAI_API_KEY> llm-eval
 
 #### Platforms and Configurations
 
-**Flash**
+##### Flash
 
 - **Dataset Format**: The dataset is organized in folders named according to the following patterns:
   - For the **sssp** algorithm: `flash-sssp-edges-{SCALE}-{FEATURE}` (e.g., `flash-sssp-edges-8-Standard`)
@@ -150,7 +189,7 @@ docker run -it --rm -e OPENAI_API_KEY=<your OPENAI_API_KEY> llm-eval
 
 
 
-**Ligra**
+##### Ligra
 
 - **Dataset Format**:  
   The dataset for Ligra is provided as the `.txt` format.
@@ -194,7 +233,7 @@ docker run -it --rm -e OPENAI_API_KEY=<your OPENAI_API_KEY> llm-eval
        ```
        ${ALGORITHM}-${DATASET_NAME}-n${machines}-p${SLOTS_PER_WORKER}.log
        ```
-**Grape**
+##### Grape
 
 - **Dataset Format**:  
   Grape uses a simple vertex/edge list format, typically stored in two separate files.
@@ -252,7 +291,7 @@ docker run -it --rm -e OPENAI_API_KEY=<your OPENAI_API_KEY> llm-eval
        ```
        ${ALGORITHM}-${DATASET_NAME}-n${machines}-p${SLOTS_PER_WORKER}.log
        ```
-**Pregel+**
+##### Pregel+
 
 - **Dataset Format**:  
   The dataset for Ligra is provided as the `.txt` format.
@@ -290,7 +329,7 @@ docker run -it --rm -e OPENAI_API_KEY=<your OPENAI_API_KEY> llm-eval
        ```
        ${ALGORITHM}-${DATASET_NAME}-n${machines}-p${SLOTS_PER_WORKER}.log
        ```
-**Gthinker**
+##### Gthinker
 
 - **Dataset Format**:  
   The dataset for Ligra is provided as the `.txt` format.
@@ -323,7 +362,7 @@ docker run -it --rm -e OPENAI_API_KEY=<your OPENAI_API_KEY> llm-eval
        ```
        ${ALGORITHM}-${DATASET_NAME}-n${machines}-p${SLOTS_PER_WORKER}.log
        ```
-**PowerGraph**
+##### PowerGraph
 
 - **Dataset Format**:  
   The dataset for Ligra is provided as the `.txt` format.
@@ -361,7 +400,7 @@ docker run -it --rm -e OPENAI_API_KEY=<your OPENAI_API_KEY> llm-eval
        ```
        ${ALGORITHM}-${DATASET_NAME}-n${machines}-p${SLOTS_PER_WORKER}.log
        ```
-**GraphX**
+##### GraphX
 
 - **Dataset Format**:  
   The dataset for Ligra is provided as the `.txt` format.
@@ -418,15 +457,15 @@ docker run -it --rm -e OPENAI_API_KEY=<your OPENAI_API_KEY> llm-eval
 If you use this artifact, please cite the paper:
 
 ```bibtex
-@article{meng2025revisiting_graph_analytics_benchmark,
-  title   = {Revisiting Graph Analytics Benchmark},
-  author  = {Lingkai Meng and Yu Shao and Long Yuan and Longbin Lai and Peng Cheng and Xue Li and Wenyuan Yu and Wenjie Zhang and Xuemin Lin and Jingren Zhou},
-  journal = {Journal of the ACM},
-  year    = {2025},
-  volume  = {37},
-  number  = {4},
-  pages   = {Article 111},
-  note    = {Artifact: Graph-Analytics-Benchmarks}
+@article{meng2025revisiting,
+  title={Revisiting Graph Analytics Benchmark},
+  author={Meng, Lingkai and Shao, Yu and Yuan, Long and Lai, Longbin and Cheng, Peng and Li, Xue and Yu, Wenyuan and Zhang, Wenjie and Lin, Xuemin and Zhou, Jingren},
+  journal={Proceedings of the ACM on Management of Data},
+  volume={3},
+  number={3},
+  pages={1--28},
+  year={2025},
+  publisher={ACM New York, NY, USA}
 }
 ```
 

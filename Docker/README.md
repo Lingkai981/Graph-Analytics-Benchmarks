@@ -1,6 +1,6 @@
 # Graph-Analytics-Benchmarks
 
-**Graph-Analytics-Benchmarks** accompanies the paper [*Revisiting Graph Analytics Benchmark*](https://doi.org/10.1145/3725345).  
+**Graph-Analytics-Benchmarks** accompanies the paper [*Revisiting Graph Analytics Benchmark (SIGMOD 2025)*](https://doi.org/10.1145/3725345).  
 This project introduces a new benchmark that overcomes limitations of existing suites and enables apples-to-apples comparisons across graph platforms.
 
 ---

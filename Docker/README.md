@@ -47,7 +47,7 @@ This project is a LLM-based usability evaluation framework including an automate
 ### Quick Start
 
 #### Environment Setup
-Download Docker image file [llm-eval.tar]( )
+Download Docker image file [llm-eval.tar](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/llm-eval.tar)
 ```shell
 docker load -i llm-eval.tar
 ```

@@ -1,6 +1,6 @@
 # Graph-Analytics-Benchmarks
 
-> **About**: This repository accompanies the paper *“Revisiting Graph Analytics Benchmark.”*  
+> **About**: This repository accompanies the paper *[“Revisiting Graph Analytics Benchmark.”](https://doi.org/10.1145/3725345)*  
 > The paper argues that existing benchmarking suites (e.g., LDBC Graphalytics) do not fully capture differences across graph platforms, and introduces a new benchmark to address this gap.  
 
 > **Highlights**  
@@ -11,13 +11,17 @@
 
 > This repo provides: (1) an efficient **Failure‑Free Trial Data Generator (FFT‑DG)**, (2) an **LLM‑based API Usability Evaluation** framework, and (3) scripts and assets to **Reproduce Performance Benchmarks** on multiple graph platforms
 
-## Data Generator
+## Overview
+
+## Quick Start
+
+### Data Generator
 
 We provide a light cpp program [FFT-DG.cpp](Data_Generator/FFT-DG.cpp) to generate data, which requires three parameters:
->
-Scale: The scale of the dataset choosen from $8, 9, 10$. You can also set your preferred scale with a specific size.
-Platform: The platform of the dataset to control the output format. You can also set your preferred format.
-Feature: The feature of the dataset (*Standard*, *Density* with a higer density, *Diameter* with a larger diameter).
+
+  - **Scale:** The scale of the dataset choosen from $8, 9, 10$. You can also set your preferred scale with a specific size.
+  - **Platform:** The platform of the dataset to control the output format. You can also set your preferred format.
+  - **Feature:** The feature of the dataset (*Standard*, *Density* with a higer density, *Diameter* with a larger diameter).
 
 ```shell
 scale=8
@@ -45,13 +49,10 @@ https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphx-edges-9
 [S10-Std](
 https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphx-edges-10-Standard.txt),
 
-## LLM-based usability evaluation
 
+### LLM-based Usability Evaluation
 
-### Overview
-This project is a LLM-based usability evaluation framework including an automated code generator and a code evaluator based on large language models (LLMs), supporting multiple graph analysis platforms and common algorithm implementations. The framework generates algorithm implementation code that meets specific platform requirements, and provides multi-dimensional code quality evaluation.
-
-### Quick Start
+> This project is a LLM-based usability evaluation framework including an automated code generator and a code evaluator based on large language models (LLMs), supporting multiple graph analysis platforms and common algorithm implementations. The framework generates algorithm implementation code that meets specific platform requirements, and provides multi-dimensional code quality evaluation.
 
 #### Environment Setup
 Download Docker image file [llm-eval.tar](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/llm-eval.tar)
@@ -72,18 +73,18 @@ or
 docker run -it --rm -e OPENAI_API_KEY=<your OPENAI_API_KEY> llm-eval
 ```
 
-## Performance Evaluation
+### Performance Evaluation
 Our performance evaluation setup utilizes 7 graph analysis platforms, both deployed on a Kubernetes cluster using Docker containers. This configuration ensures consistent and reproducible experiments across various scales and configurations.
 
-### Evaluation Environment
+#### Evaluation Environment
 
 - **Cluster**: Kubernetes cluster
 - **Containerization**: Docker
 - **Job Orchestration**: Kubeflow MPIJob for distributed runs
 
-### Platforms and Configurations
+#### Platforms and Configurations
 
-#### Flash
+##### Flash
 
 - **Dataset Format**: The dataset is organized in folders named according to the following patterns:
   - For the **sssp** algorithm: `flash-sssp-edges-{SCALE}-{FEATURE}` (e.g., `flash-sssp-edges-8-Standard`)
@@ -141,7 +142,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
 
 
 
-#### Ligra
+##### Ligra
 
 - **Dataset Format**:  
   The dataset for Ligra is provided as the `.txt` format.
@@ -192,7 +193,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
        ```
        ${ALGORITHM}-${DATASET_NAME}-n${machines}-p${SLOTS_PER_WORKER}.log
        ```
-#### Grape
+##### Grape
 
 - **Dataset Format**:  
   Grape uses a simple vertex/edge list format, typically stored in two separate files.
@@ -257,7 +258,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
        ```
        ${ALGORITHM}-${DATASET_NAME}-n${machines}-p${SLOTS_PER_WORKER}.log
        ```
-#### Pregel+
+##### Pregel+
 
 - **Dataset Format**:  
   The dataset for Ligra is provided as the `.txt` format.
@@ -301,7 +302,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
        ```
        ${ALGORITHM}-${DATASET_NAME}-n${machines}-p${SLOTS_PER_WORKER}.log
        ```
-#### Gthinker
+##### Gthinker
 
 - **Dataset Format**:  
   The dataset for Ligra is provided as the `.txt` format.
@@ -335,7 +336,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
        ```
        ${ALGORITHM}-${DATASET_NAME}-n${machines}-p${SLOTS_PER_WORKER}.log
        ```
-#### PowerGraph
+##### PowerGraph
 
 - **Dataset Format**:  
   The dataset for Ligra is provided as the `.txt` format.
@@ -379,7 +380,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
        ```
        ${ALGORITHM}-${DATASET_NAME}-n${machines}-p${SLOTS_PER_WORKER}.log
        ```
-#### GraphX
+##### GraphX
 
 - **Dataset Format**:  
   The dataset for Ligra is provided as the `.txt` format.

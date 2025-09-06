@@ -1,8 +1,15 @@
 # Graph-Analytics-Benchmarks
-The source code of the paper "Revisiting Graph Analytics Benchmarks"
 
-The appendix content is in file “Benchmark_appendix.pdf”.
+> **About**: This repository accompanies the paper *“Revisiting Graph Analytics Benchmark.”*  
+> The paper argues that existing benchmarking suites (e.g., LDBC Graphalytics) do not fully capture differences across graph platforms, and introduces a new benchmark to address this gap.  
 
+> **Highlights**  
+> - **Algorithm Coverage**: Eight representative algorithms (PR, SSSP, TC, BC, KC, CD, LPA, WCC) selected for both coverage and discriminative power.  
+> - **Data Generator**: An efficient, **failure-free** generator (FFT-DG) that independently controls **scale**, **density**, and **diameter**.  
+> - **Usability Evaluation**: A novel **multi-level LLM framework** for assessing API usability, replacing costly human studies.  
+> - **Empirical Validation**: Benchmarked on GraphX, PowerGraph, Flash, Grape, Pregel+, Ligra, and G-thinker, reporting **Timing**, **Throughput (edges/s)**, **Scalability**, and **Robustness**.  
+
+> This repo provides: (1) an efficient **Failure‑Free Trial Data Generator (FFT‑DG)**, (2) an **LLM‑based API Usability Evaluation** framework, and (3) scripts and assets to **Reproduce Performance Benchmarks** on multiple graph platforms
 
 ## Data Generator
 

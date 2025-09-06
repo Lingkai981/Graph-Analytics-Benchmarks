@@ -104,19 +104,19 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
      ```bash
      sudo docker load -i flash-mpi-v0.4.tar
      ```
-   2. On all machines, create identical folders to store datasets. Then, download the following datasets and place them into these folders:
-      - [flash-edges-8-Standard](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [flash-edges-9-Standard](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [flash-edges-8-Density](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/flash-edges-8-Density/)
-      - [flash-edges-9-Density](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [flash-edges-8-Diameter](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/flash-edges-8-Diameter/)
-      - [flash-edges-9-Diameter](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [flash-sssp-edges-8-Standard](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [flash-sssp-edges-9-Standard](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [flash-sssp-edges-8-Density](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [flash-sssp-edges-9-Density](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [flash-sssp-edges-8-Diameter](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [flash-sssp-edges-9-Diameter](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
+   2. On all machines, create identical folders to store datasets. Then, download and unzip the following datasets and place them into these folders:
+      - [flash-edges-8-Standard](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/flash-edges-8-Standard.zip)
+      - [flash-edges-9-Standard](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/flash-edges-9-Standard.zip)
+      - [flash-edges-8-Density](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/flash-edges-8-Density.zip)
+      - [flash-edges-9-Density](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/flash-edges-9-Density.zip)
+      - [flash-edges-8-Diameter](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/flash-edges-8-Diameter.zip.zip)
+      - [flash-edges-9-Diameter](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/flash-edges-9-Diameter.zip)
+      - [flash-sssp-edges-8-Standard](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/flash-sssp-edges-8-Standard.zip)
+      - [flash-sssp-edges-9-Standard](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/flash-sssp-edges-9-Standard.zip)
+      - [flash-sssp-edges-8-Density](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/flash-sssp-edges-8-Density.zip)
+      - [flash-sssp-edges-9-Density](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/flash-sssp-edges-9-Density.zip)
+      - [flash-sssp-edges-8-Diameter](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/flash-sssp-edges-8-Diameter.zip)
+      - [flash-sssp-edges-9-Diameter](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/flash-sssp-edges-9-Diameter.zip)
 
    3. Execute the following command to run the desired algorithm:
 
@@ -159,18 +159,18 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
      sudo docker load -i ligra-mpi-v0.1.tar
      ```
    2. On all machines, create identical folders to store datasets. Then, download the following datasets and place them into these folders:
-      - [ligra-adj-8-Standard.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [ligra-adj-9-Standard.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [ligra-adj-8-Density.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [ligra-adj-9-Density.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [ligra-adj-8-Diameter.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [ligra-adj-9-Diameter.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [ligra-sssp-adj-8-Standard.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [ligra-sssp-adj-9-Standard.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [ligra-sssp-adj-8-Density.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [ligra-sssp-adj-9-Density.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [ligra-sssp-adj-8-Diameter.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [ligra-sssp-adj-9-Diameter.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
+      - [ligra-adj-8-Standard.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/ligra-adj-8-Standard.txt)
+      - [ligra-adj-9-Standard.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/ligra-adj-9-Standard.txt)
+      - [ligra-adj-8-Density.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/ligra-adj-8-Density.txt)
+      - [ligra-adj-9-Density.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/ligra-adj-9-Density.txt)
+      - [ligra-adj-8-Diameter.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/ligra-adj-8-Diameter.txt)
+      - [ligra-adj-9-Diameter.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/ligra-adj-9-Diameter.txt)
+      - [ligra-sssp-adj-8-Standard.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/ligra-sssp-adj-8-Standard.txt)
+      - [ligra-sssp-adj-9-Standard.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/ligra-sssp-adj-9-Standard.txt)
+      - [ligra-sssp-adj-8-Density.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/ligra-sssp-adj-8-Density.txt)
+      - [ligra-sssp-adj-9-Density.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/ligra-sssp-adj-9-Density.txt)
+      - [ligra-sssp-adj-8-Diameter.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/ligra-sssp-adj-8-Diameter.txt)
+      - [ligra-sssp-adj-9-Diameter.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/ligra-sssp-adj-9-Diameter.txt)
         
    3. Execute the following command to run the desired algorithm:
 
@@ -273,12 +273,12 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
      sudo docker load -i pregel-mpi-v0.1.tar
      ```
    2. On all machines, create identical folders to store datasets. Then, download the following datasets and place them into these folders:
-      - [pregel+-adj-8-Standard.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [pregel+-adj-9-Standard.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [pregel+-adj-8-Density.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [pregel+-adj-9-Density.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [pregel+-adj-8-Diameter.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [pregel+-adj-9-Diameter.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
+      - [pregel+-adj-8-Standard.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/pregel+-adj-8-Standard.txt)
+      - [pregel+-adj-9-Standard.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/pregel+-adj-9-Standard.txt)
+      - [pregel+-adj-8-Density.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/pregel+-adj-8-Density.txt)
+      - [pregel+-adj-9-Density.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/pregel+-adj-9-Density.txt)
+      - [pregel+-adj-8-Diameter.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/pregel+-adj-8-Diameter.txt)
+      - [pregel+-adj-9-Diameter.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/pregel+-adj-9-Diameter.txt)
         
    3. Execute the following command to run the desired algorithm:
       - **Important**: In file `pregel-mpijob-template.yaml`, `my-hadoop-cluster-hadoop` **must match** the name of the `ConfigMap` you create or reference in your Kubernetes YAML configurations. If the `ConfigMap` is named differently, you will need to update the name in the `volumes` section of the pod definition.
@@ -351,12 +351,12 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
      sudo docker load -i pregel-mpi-v0.1.tar
      ```
    2. On all machines, create identical folders to store datasets. Then, download the following datasets and place them into these folders:
-      - [graphlab-adj-8-Standard.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [graphlab-adj-9-Standard.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [graphlab-adj-8-Density.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [graphlab-adj-9-Density.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [graphlab-adj-8-Diameter.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [graphlab-adj-9-Diameter.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
+      - [graphlab-adj-8-Standard.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphlab-adj-8-Standard.txt)
+      - [graphlab-adj-9-Standard.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphlab-adj-9-Standard.txt)
+      - [graphlab-adj-8-Density.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphlab-adj-8-Density.txt)
+      - [graphlab-adj-9-Density.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphlab-adj-9-Density.txt)
+      - [graphlab-adj-8-Diameter.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphlab-adj-8-Diameter.txt)
+      - [graphlab-adj-9-Diameter.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphlab-adj-9-Diameter.txt)
         
    3. Execute the following command to run the desired algorithm:
       - **Important**: In file `graphlab-mpijob-template.yaml`, `my-hadoop-cluster-hadoop` **must match** the name of the `ConfigMap` you create or reference in your Kubernetes YAML configurations. If the `ConfigMap` is named differently, you will need to update the name in the `volumes` section of the pod definition.
@@ -402,18 +402,18 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
    Follow these steps to run the algorithm:
   
    1. Download the following datasets and place them into these folders:
-      - [graphx-edges-8-Standard.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [graphx-edges-9-Standard.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [graphx-edges-8-Density.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [graphx-edges-9-Density.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [graphx-edges-8-Diameter.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [graphx-edges-9-Diameter.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [graphx-weight-edges-8-Standard.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [graphx-weight-edges-9-Standard.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [graphx-weight-edges-8-Density.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [graphx-weight-edges-9-Density.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [graphx-weight-edges-8-Diameter.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
-      - [graphx-weight-edges-9-Diameter.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/)
+      - [graphx-edges-8-Standard.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphx-edges-8-Standard.txt)
+      - [graphx-edges-9-Standard.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphx-edges-9-Standard.txt)
+      - [graphx-edges-8-Density.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphx-edges-8-Density.txt)
+      - [graphx-edges-9-Density.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphx-edges-9-Density.txt)
+      - [graphx-edges-8-Diameter.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphx-edges-8-Diameter.txt)
+      - [graphx-edges-9-Diameter.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphx-edges-9-Diameter.txt)
+      - [graphx-weight-edges-8-Standard.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphx-weight-edges-8-Standard.txt)
+      - [graphx-weight-edges-9-Standard.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphx-weight-edges-9-Standard.txt)
+      - [graphx-weight-edges-8-Density.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphx-weight-edges-8-Density.txt)
+      - [graphx-weight-edges-9-Density.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphx-weight-edges-9-Density.txt)
+      - [graphx-weight-edges-8-Diameter.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphx-weight-edges-8-Diameter.txt)
+      - [graphx-weight-edges-9-Diameter.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphx-weight-edges-9-Diameter.txt)
         
    2. Download the `.jar` files into the **GraphX/** folder and execute the command to run the algorithm:
       - `pagerank`([[`.jar` file]](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/) [[Command]](Performance%20Evaluation/GraphX/PageRankExample/pagerank.sh))

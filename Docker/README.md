@@ -416,14 +416,14 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
       - [graphx-weight-edges-9-Diameter.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphx-weight-edges-9-Diameter.txt)
         
    2. Download the `.jar` files into the **GraphX/** folder and execute the command to run the algorithm:
-      - `pagerank`([[`.jar` file]](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/) [[Command]](Performance%20Evaluation/GraphX/PageRankExample/pagerank.sh))
-      - `sssp`([[`.jar` file]](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/) [[Command]](Performance%20Evaluation/GraphX/SSSPExample/sssp.sh))
-      - `triangle`([[`.jar` file]](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/) [[Command]](Performance%20Evaluation/GraphX/TriangleCountingExample/trianglecounting.sh))
-      - `lpa`([[`.jar` file]](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/) [[Command]](Performance%20Evaluation/GraphX/LabelPropagationExample/labelpropagation.sh))
-      - `kcore`([[`.jar` file]](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/) [[Command]](Performance%20Evaluation/GraphX/CoreExample/core.sh))
-      - `cc`([[`.jar` file]](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/) [[Command]](Performance%20Evaluation/GraphX/ConnectedComponentExample/connectedcomponent.sh))
-      - `betweenness`([[`.jar` file]](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/) [[Command]](Performance%20Evaluation/GraphX/BetweennessCentralityExample/betweennesscentrality.sh))
-      - `clique`([[`.jar` file]](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/) [[Command]](Performance%20Evaluation/GraphX/KCliqueExample/kclique.sh))
+      - `pagerank`([[`.jar` file]](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/pagerankexample_2.11-0.1.jar) [[Command]](GraphX/pagerank.sh))
+      - `sssp`([[`.jar` file]](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/ssspexample_2.11-0.1.jar) [[Command]](GraphX/sssp.sh))
+      - `triangle`([[`.jar` file]](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/trianglecountingexample_2.11-0.1.jar) [[Command]](GraphX/trianglecounting.sh))
+      - `lpa`([[`.jar` file]](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/labelpropagationexample_2.11-0.1.jar) [[Command]](GraphX/labelpropagation.sh))
+      - `kcore`([[`.jar` file]](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/coreexample_2.11-0.1.jar) [[Command]](GraphX/core.sh))
+      - `cc`([[`.jar` file]](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/coreexample_2.11-0.1.jar) [[Command]](GraphX/connectedcomponent.sh))
+      - `betweenness`([[`.jar` file]](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/betweennesscentralityexample_2.11-0.1.jar) [[Command]](GraphX/betweennesscentrality.sh))
+      - `clique`([[`.jar` file]](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/kcliqueexample_2.11-0.1.jar) [[Command]](GraphX/kclique.sh))
      
       For Example:
       ```bash

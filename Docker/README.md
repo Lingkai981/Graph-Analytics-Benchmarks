@@ -7,9 +7,12 @@
 > - **Algorithm Coverage**: Eight representative algorithms (PR, SSSP, TC, BC, KC, CD, LPA, WCC) selected for both coverage and discriminative power.  
 > - **Data Generator**: An efficient, **failure-free** generator (FFT-DG) that independently controls **scale**, **density**, and **diameter**.  
 > - **Usability Evaluation**: A novel **multi-level LLM framework** for assessing API usability, replacing costly human studies.  
-> - **Empirical Validation**: Benchmarked on GraphX, PowerGraph, Flash, Grape, Pregel+, Ligra, and G-thinker, reporting **Timing**, **Throughput (edges/s)**, **Scalability**, and **Robustness**.  
+> - **Empirical Validation**: Benchmarked on GraphX, PowerGraph, Flash, Grape, Pregel+, Ligra, and G-thinker, reporting **Timing**, **Throughput (edges/s)**, **Scalability**, and **Robustness**.
+> These components enable apples-to-apples comparisons across platforms and scales with minimal setup.
 
-> This repo provides: (1) an efficient **Failure‑Free Trial Data Generator (FFT‑DG)**, (2) an **LLM‑based API Usability Evaluation** framework, and (3) scripts and assets to **Reproduce Performance Benchmarks** on multiple graph platforms
+
+> This repo provides: (1) an efficient **Failure-Free Trial Data Generator (FFT-DG)**, (2) an **LLM-based API usability evaluation** framework, and (3) scripts and assets to **reproduce performance benchmarks** on multiple graph platforms.
+
 
 ## Overview
 
@@ -17,11 +20,11 @@
 
 ### Data Generator
 
-We provide a light cpp program [FFT-DG.cpp](Data_Generator/FFT-DG.cpp) to generate data, which requires three parameters:
+We provide a lightweight C++ program [FFT-DG.cpp](Data_Generator/FFT-DG.cpp) to generate data. It takes three parameters:
 
-  - **Scale:** The scale of the dataset choosen from $8, 9, 10$. You can also set your preferred scale with a specific size.
-  - **Platform:** The platform of the dataset to control the output format. You can also set your preferred format.
-  - **Feature:** The feature of the dataset (*Standard*, *Density* with a higer density, *Diameter* with a larger diameter).
+  - **Scale**: the dataset scale, chosen from `8, 9, 10`. You may also set a custom size.
+  - **Platform**: the target platform to control the output format. Custom formats are supported.
+  - **Feature**: the dataset feature (*Standard*; *Density* with **higher** edge density; *Diameter* with a **larger** diameter).
 
 ```shell
 scale=8
@@ -36,13 +39,13 @@ To easy startup, here is the datasets used in our evalution. The format of these
 
 [S8-Std](
 https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphx-edges-8-Standard.txt), 
-[S8-Denisty](
+[S8-Density](
 https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphx-edges-8-Density.txt),
 [S8-Diameter](
 https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphx-edges-8-Diameter.txt),
 [S9-Std](
 https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphx-edges-9-Standard.txt), 
-[S9-Denisty](
+[S9-Density](
 https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphx-edges-9-Density.txt),
 [S9-Diameter](
 https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphx-edges-9-Diameter.txt),
@@ -52,7 +55,8 @@ https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphx-edges-1
 
 ### LLM-based Usability Evaluation
 
-> This project is a LLM-based usability evaluation framework including an automated code generator and a code evaluator based on large language models (LLMs), supporting multiple graph analysis platforms and common algorithm implementations. The framework generates algorithm implementation code that meets specific platform requirements, and provides multi-dimensional code quality evaluation.
+> This framework includes an automated code generator and a code evaluator powered by LLMs. It supports multiple graph platforms and common algorithm implementations, producing platform-compliant code and multi-dimensional quality scores.
+
 
 #### Environment Setup
 Download Docker image file [llm-eval.tar](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/llm-eval.tar)
@@ -74,17 +78,28 @@ docker run -it --rm -e OPENAI_API_KEY=<your OPENAI_API_KEY> llm-eval
 ```
 
 ### Performance Evaluation
-Our performance evaluation setup utilizes 7 graph analysis platforms, both deployed on a Kubernetes cluster using Docker containers. This configuration ensures consistent and reproducible experiments across various scales and configurations.
 
-#### Evaluation Environment
+> All performance experiments are conducted in a **Kubernetes cluster** with **Docker containers** to ensure reproducibility and consistency.  
+> Distributed jobs are scheduled with the **Kubeflow MPI Operator (MPIJob)**.
 
-- **Cluster**: Kubernetes cluster
-- **Containerization**: Docker
-- **Job Orchestration**: Kubeflow MPIJob for distributed runs
+#### Platform Groups
+
+- **Kubernetes + MPI Operator**
+  - Flash
+  - Ligra
+  - Grape
+- **Kubernetes + MPI Operator + Hadoop**
+  - Pregel+
+  - Gthinker
+  - PowerGraph
+- **Spark-based Environment**
+  - GraphX (requires Spark 2.4.x, Scala 2.11, Hadoop 2.7, Java 8)
+
+---
 
 #### Platforms and Configurations
 
-##### Flash
+**Flash**
 
 - **Dataset Format**: The dataset is organized in folders named according to the following patterns:
   - For the **sssp** algorithm: `flash-sssp-edges-{SCALE}-{FEATURE}` (e.g., `flash-sssp-edges-8-Standard`)
@@ -96,14 +111,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
   - `graph.dat`: The data file for the graph.
 
 - **Supported Algorithms**: 
-  - `pagerank`
-  - `sssp`
-  - `triangle`
-  - `lpa`
-  - `k-core-search`
-  - `clique`
-  - `cc`
-  - `bc`
+  - `pagerank`, `sssp`, `triangle`, `lpa`, `k-core-search`, `clique`, `cc`, `bc`
 
 - **Run Flash**:  
    Follow these steps to run the algorithm:
@@ -117,7 +125,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
       - [flash-edges-9-Standard](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/flash-edges-9-Standard.zip)
       - [flash-edges-8-Density](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/flash-edges-8-Density.zip)
       - [flash-edges-9-Density](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/flash-edges-9-Density.zip)
-      - [flash-edges-8-Diameter](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/flash-edges-8-Diameter.zip.zip)
+      - [flash-edges-8-Diameter](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/flash-edges-8-Diameter.zip)
       - [flash-edges-9-Diameter](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/flash-edges-9-Diameter.zip)
       - [flash-sssp-edges-8-Standard](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/flash-sssp-edges-8-Standard.zip)
       - [flash-sssp-edges-9-Standard](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/flash-sssp-edges-9-Standard.zip)
@@ -134,7 +142,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
      ```
 
      - `<ALGORITHM>`: Replace with the name of the algorithm you want to run (e.g., `sssp`, `pagerank`, etc.).
-     - `<PATH_TO_DATASET_DIRECTORY>`: Provide the path to the folder where the dataset is stored.
+     - `<PATH_TO_DATASET_FOLDER>`: Provide the path to the folder where the dataset is stored.
      - The output logs will be generated in the `Flash/output/` folder, with the following naming format:  
        ```
        ${ALGORITHM}-${DATASET_NAME}-n${machines}-p${SLOTS_PER_WORKER}.log
@@ -142,7 +150,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
 
 
 
-##### Ligra
+**Ligra**
 
 - **Dataset Format**:  
   The dataset for Ligra is provided as the `.txt` format.
@@ -150,14 +158,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
     - For other algorithms: `ligra-adj-{SCALE}-{FEATURE}` (e.g., `ligra-adj-8-Diameter.txt`)
 
 - **Supported Algorithms**:  
-  - `PageRank`
-  - `BellmanFord`
-  - `BC`
-  - `KCLIQUE`
-  - `KCore`
-  - `LPA`
-  - `Components`
-  - `Triangle`
+  - `PageRank`, `BellmanFord`, `BC`, `KCLIQUE`, `KCore`, `LPA`, `Components`, `Triangle`
 
 - **Run Ligra**:  
    Follow these steps to run the algorithm:
@@ -193,7 +194,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
        ```
        ${ALGORITHM}-${DATASET_NAME}-n${machines}-p${SLOTS_PER_WORKER}.log
        ```
-##### Grape
+**Grape**
 
 - **Dataset Format**:  
   Grape uses a simple vertex/edge list format, typically stored in two separate files.
@@ -203,14 +204,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
       - Format: for the **sssp** algorithm: `grape-sssp-edges-{SCALE}-{FEATURE}.e` (e.g., `grape-sssp-edges-8-Standard.e`); and for other algorithm: `grape-edges-{SCALE}-{FEATURE}.e` (e.g., `grape-edges-8-Standard.e`).
       
 - **Supported Algorithms**:  
-  - `pagerank`
-  - `sssp`
-  - `bc`
-  - `kclique`
-  - `core_decomposition`
-  - `cdlp`
-  - `wcc`
-  - `lcc`
+  - `pagerank`, `sssp`, `bc`, `kclique`, `core_decomposition`, `cdlp`, `wcc`, `lcc`
 
 - **Run Grape**:  
    Follow these steps to run the algorithm:
@@ -248,7 +242,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
    3. Execute the following command to run the desired algorithm:
 
       ```bash
-      cd Ligra
+      cd Grape
       ./run.sh <ALGORITHM> <PATH_TO_DATASET_FOLDER>
       ```
 
@@ -258,20 +252,14 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
        ```
        ${ALGORITHM}-${DATASET_NAME}-n${machines}-p${SLOTS_PER_WORKER}.log
        ```
-##### Pregel+
+**Pregel+**
 
 - **Dataset Format**:  
   The dataset for Ligra is provided as the `.txt` format.
     - Format: `pregel+-adj-{SCALE}-{FEATURE}.txt` (e.g., `pregel+-adj-8-Standard.txt`)
     
 - **Supported Algorithms**:  
-  - `pagerank`
-  - `sssp`
-  - `betweenness`
-  - `lpa`
-  - `clique`
-  - `triangle`
-  - `cc`
+  - `pagerank`, `sssp`, `betweenness`, `lpa`, `clique`, `triangle`, `cc`
 
 - **Run Pregel+**:  
    Follow these steps to run the algorithm:
@@ -302,22 +290,21 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
        ```
        ${ALGORITHM}-${DATASET_NAME}-n${machines}-p${SLOTS_PER_WORKER}.log
        ```
-##### Gthinker
+**Gthinker**
 
 - **Dataset Format**:  
   The dataset for Ligra is provided as the `.txt` format.
     - Format: `gthinker-adj-{SCALE}-{FEATURE}.txt` (e.g., `gthinker-adj-8-Standard.txt`)
     
 - **Supported Algorithms**:  
-  - `clique`
-  - `triangle`
+  - `clique`, `triangle`
 
 - **Run Gthinker**:  
    Follow these steps to run the algorithm:
 
    1. Download and load the Docker image [gthinker-mpi-v0.1.tar](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/gthinker-mpi-v0.1.tar) on all machines.
     ```bash
-     sudo docker load -i pregel-mpi-v0.1.tar
+     sudo docker load -i gthinker-mpi-v0.1.tar
      ```
    2. On all machines, create identical folders to store datasets. Then, download datasets (**same to datasets of Pregel+**) and place them into these folders.
       
@@ -336,27 +323,21 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
        ```
        ${ALGORITHM}-${DATASET_NAME}-n${machines}-p${SLOTS_PER_WORKER}.log
        ```
-##### PowerGraph
+**PowerGraph**
 
 - **Dataset Format**:  
   The dataset for Ligra is provided as the `.txt` format.
     - Format: `graphlab-adj-{SCALE}-{FEATURE}.txt` (e.g., `graphlab-adj-8-Standard.txt`)
     
 - **Supported Algorithms**:  
-  - `pagerank`
-  - `sssp`
-  - `triangle`
-  - `lpa`
-  - `kcore`
-  - `cc`
-  - `betweenness`
+  - `pagerank`, `sssp`, `triangle`, `lpa`, `kcore`, `cc`, `betweenness`
 
 - **Run PowerGraph**:  
    Follow these steps to run the algorithm:
 
    1. Download and load the Docker image [graphlab-mpi-v0.1.tar](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphlab-mpi-v0.1.tar) on all machines.
     ```bash
-     sudo docker load -i pregel-mpi-v0.1.tar
+     sudo docker load -i graphlab-mpi-v0.1.tar
      ```
    2. On all machines, create identical folders to store datasets. Then, download the following datasets and place them into these folders:
       - [graphlab-adj-8-Standard.txt](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/graphlab-adj-8-Standard.txt)
@@ -380,23 +361,16 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
        ```
        ${ALGORITHM}-${DATASET_NAME}-n${machines}-p${SLOTS_PER_WORKER}.log
        ```
-##### GraphX
+**GraphX**
 
 - **Dataset Format**:  
   The dataset for Ligra is provided as the `.txt` format.
-    - Format: `graphx-adj-{SCALE}-{FEATURE}.v` (e.g., `graphx-adj-8-Standard.txt`)
+    - Format: `graphx-adj-{SCALE}-{FEATURE}.txt` (e.g., `graphx-adj-8-Standard.txt`)
 
 - **Supported Algorithms**:  
-  - `pagerank`
-  - `sssp`
-  - `triangle`
-  - `lpa`
-  - `kcore`
-  - `cc`
-  - `betweenness`
-  - `clique`
+  - `pagerank`, `sssp`, `triangle`, `lpa`, `kcore`, `cc`, `betweenness`, `clique`
 
-- **Run PowerGraph**:
+- **Run GraphX**:
   - **Environment Requirements**:
   The `.jar` files are compiled with **Scala 2.11** (`_2.11` suffix). To ensure compatibility, use the following environment:
 
@@ -429,7 +403,7 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
       - `triangle`([[`.jar` file]](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/trianglecountingexample_2.11-0.1.jar) [[Command]](GraphX/trianglecounting.sh))
       - `lpa`([[`.jar` file]](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/labelpropagationexample_2.11-0.1.jar) [[Command]](GraphX/labelpropagation.sh))
       - `kcore`([[`.jar` file]](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/coreexample_2.11-0.1.jar) [[Command]](GraphX/core.sh))
-      - `cc`([[`.jar` file]](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/coreexample_2.11-0.1.jar) [[Command]](GraphX/connectedcomponent.sh))
+      - `cc`([[`.jar` file]](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/connectedcomponentexample_2.11-0.1.jar) [[Command]](GraphX/connectedcomponent.sh))
       - `betweenness`([[`.jar` file]](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/betweennesscentralityexample_2.11-0.1.jar) [[Command]](GraphX/betweennesscentrality.sh))
       - `clique`([[`.jar` file]](https://graphscope.oss-cn-beijing.aliyuncs.com/benchmark_datasets/kcliqueexample_2.11-0.1.jar) [[Command]](GraphX/kclique.sh))
      
@@ -439,3 +413,21 @@ Our performance evaluation setup utilizes 7 graph analysis platforms, both deplo
       ./pagerank.sh
       ```
 
+## Cite This Work
+
+If you use this artifact, please cite the paper:
+
+```bibtex
+@article{meng2025revisiting_graph_analytics_benchmark,
+  title   = {Revisiting Graph Analytics Benchmark},
+  author  = {Lingkai Meng and Yu Shao and Long Yuan and Longbin Lai and Peng Cheng and Xue Li and Wenyuan Yu and Wenjie Zhang and Xuemin Lin and Jingren Zhou},
+  journal = {Journal of the ACM},
+  year    = {2025},
+  volume  = {37},
+  number  = {4},
+  pages   = {Article 111},
+  note    = {Artifact: Graph-Analytics-Benchmarks}
+}
+```
+
+---
